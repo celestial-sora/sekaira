@@ -1,0 +1,10 @@
+export type Entity = { id: string; owner_id: string | null; name: string; description: string; created_at: string };
+export type Character = Entity & { avatar: string; personality: string; backstory: string; speaking_style: string; likes: string; dislikes: string; relationship_behavior: string; greeting: string; example_dialogue: string; lore: string; world_id: string | null; scenario_id: string | null; faction: string; tags: string[]; avatar_id: string | null };
+export type World = Entity & { lore: string; rules: string; locations: string; factions: string; power_system: string; timeline: string; world_state: string; genre: string; cover: string };
+export type Persona = Entity & { world_id: string | null; species: string; role: string; rank: string; faction: string; abilities: string; appearance: string; backstory: string; personality: string; public_facts: string; secret_facts: string };
+export type Conversation = { id: string; owner_id: string; name: string; world_id: string | null; persona_id: string | null; scenario_id: string | null; state: string; created_at: string; updated_at: string; character_ids: string[]; location: string };
+export type Message = { id: string; conversation_id: string; role: 'user' | 'assistant' | 'director'; character_id: string | null; content: string; emotion: string; created_at: string };
+export type Memory = { id: string; owner_id: string; conversation_id: string; world_id: string | null; persona_id: string | null; character_id: string | null; type: string; content: string; importance: number; confidence: number; known_by: string[]; created_at: string };
+export type Relationship = { character_id: string; trust: number; note: string };
+export type Bootstrap = { user: {id:string;name:string;guest:boolean} | null; characters: Character[]; worlds: World[]; personas: Persona[]; conversations: Conversation[]; groqReady: boolean; googleReady: boolean; guestAllowed: boolean; model: string };
+export type ChatData = { conversation: Conversation; messages: Message[]; memories: Memory[]; relationships: Relationship[]; characters: Character[]; world: World | null; persona: Persona | null };
