@@ -1,5 +1,5 @@
 import {randomUUID} from 'node:crypto';
-import {db,transaction} from './database';
+import {db,transaction,hasPostgres} from './database';
 export {db,transaction} from './database';
 import type {Character,World,Persona,Conversation,Message,Memory} from './types';
 export class DatabaseContextError extends Error {constructor(message:string,public status=400){super(message);this.name='DatabaseContextError';}}
@@ -58,7 +58,7 @@ export async function startConversation(owner:string,input:ConversationInput):Pr
   }));
 }
 async function seed(d:ReturnType<typeof db>){
- if(process.env.DATABASE_URL) await d.prepare('SELECT pg_advisory_xact_lock(172939)').get();
+ if(hasPostgres()) await d.prepare('SELECT pg_advisory_xact_lock(172939)').get();
  if((await d.prepare('SELECT id FROM worlds WHERE id=?').get('aetheria')))return;
  const world:World={id:'aetheria',owner_id:null,name:'Aetheria',description:'A city above the clouds. An ancient promise. A story only you can write.',lore:'The floating city of Aetheria is held aloft by the Heartstone. Its light has begun to fade. The Skyward Guild and the Moon Archive disagree about its origin.',rules:'Magic has a cost. People know only what they witness or learn. The player controls their own choices.',locations:'Skyhaven Market\nThe Moon Archive\nCloudspire Gardens\nThe Heartstone',factions:'Skyward Guild\nMoon Archive',power_system:'Aether crystals hold finite magical energy.',timeline:'The first morning of the Lantern Festival.',world_state:'The city is peaceful. The Heartstone is dimming; only the archivists suspect why.',genre:'Fantasy',cover:'sky',created_at:now()};
  (await d.prepare('INSERT INTO worlds (id,owner_id,data) VALUES (?,?,?)').run(world.id,null,JSON.stringify(world)));
