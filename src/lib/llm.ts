@@ -19,6 +19,10 @@ export type LlmConfig = {
   endpoint: string;
 };
 
+export function groqModelCandidates(config: LlmConfig = llmConfig()): string[] {
+  return [...new Set([config.model, GROQ_MODELS.roleplay, GROQ_MODELS.fast])];
+}
+
 export function llmConfig(): LlmConfig {
   const model = process.env.GROQ_MODEL?.trim() || DEFAULT_ROLEPLAY_MODEL;
   return {

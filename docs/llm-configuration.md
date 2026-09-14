@@ -6,4 +6,6 @@ To change the source default for every environment, replace `DEFAULT_ROLEPLAY_MO
 
 To choose a model without a code change, set the server-only `GROQ_MODEL` environment variable. It overrides the source default. For Vercel, change `GROQ_MODEL` in the project environment variables, then redeploy so new requests use the chosen model.
 
+If the configured model has been retired, is unavailable to the Groq project, or returns an invalid structured response, Oonchai retries the current roleplay and fast models in `GROQ_MODELS`. Keep those fallback IDs on models enabled for the Groq project.
+
 The current model appears in Oonchai Settings. This is informational only; users cannot choose the model and no API key reaches the browser.
