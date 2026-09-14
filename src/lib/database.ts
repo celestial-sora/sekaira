@@ -8,7 +8,7 @@ type Row=Record<string,unknown>;
 type Value=string|number|null;
 const connection=new AsyncLocalStorage<PoolClient>();
 let pool:Pool|undefined,local:DatabaseSync|undefined;
-function postgres(){return pool??=new Pool({connectionString:process.env.DATABASE_URL,max:3,idleTimeoutMillis:20000,connectionTimeoutMillis:15000,ssl:process.env.DATABASE_SSL==='false'?false:{rejectUnauthorized:true}});}
+function postgres(){return pool??=new Pool({connectionString:process.env.DATABASE_URL,max:3,idleTimeoutMillis:20000,connectionTimeoutMillis:15000,ssl:{rejectUnauthorized:false}});}
 function sqlite(){if(!local){const path=process.env.DATABASE_PATH||'./data/sekaira.sqlite';if(path!==':memory:')mkdirSync(dirname(path),{recursive:true});local=new DatabaseSync(path);local.exec(readFileSync('src/lib/schema.sql','utf8'));}return local;}
 // Keep the same parameterized repository queries for PostgreSQL and local SQLite.
 export function postgresSQL(sql:string){
@@ -19,6 +19,6 @@ export function postgresSQL(sql:string){
  let quote=false,index=0,result='';for(let i=0;i<out.length;i++){const c=out[i];if(c==="'"){if(quote&&out[i+1]==="'"){result+="''";i++;continue;}quote=!quote;}result+=c==='?'&&!quote?`$${++index}`:c;}return result;
 }
 async function query(sql:string,args:Value[]){if(process.env.DATABASE_URL){const result=await (connection.getStore()||postgres()).query(postgresSQL(sql),args);return {rows:result.rows as Row[],changes:result.rowCount||0};}if(process.env.VERCEL)throw new Error('DATABASE_URL must be configured on Vercel.');const stmt=sqlite().prepare(sql);if(/^\s*(SELECT|WITH)/i.test(sql))return {rows:stmt.all(...args) as Row[],changes:0};const result=stmt.run(...args);return {rows:[] as Row[],changes:Number(result.changes)};}
-const adapter={prepare(sql:string){return {async all(...args:Value[]){return (await query(sql,args)).rows;},async get(...args:Value[]){return (await query(sql,args)).rows[0];},async run(...args:Value[]){return {changes:(await query(sql,args)).changes};}}};
+const adapter={prepare(sql:string){return {async all(...args:Value[]){return (await query(sql,args)).rows;},async get(...args:Value[]){return (await query(sql,args)).rows[0];},async run(...args:Value[]){return {changes:(await query(sql,args)).changes};}}}};
 export const db=()=>adapter;
 export async function transaction<T>(fn:()=>Promise<T>):Promise<T>{if(process.env.DATABASE_URL){if(connection.getStore())return fn();const client=await postgres().connect();try{await client.query('BEGIN');const value=await connection.run(client,fn);await client.query('COMMIT');return value;}catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}}const d=sqlite();d.exec('BEGIN IMMEDIATE');try{const value=await fn();d.exec('COMMIT');return value;}catch(e){d.exec('ROLLBACK');throw e;}}

@@ -6,6 +6,7 @@ import {db,id,now,ensureDatabase,list,get,createCharacter,createWorld,createPers
 import {currentUser,guest,guestAllowed,googleReady,session,hash} from '@/lib/auth';
 import {characterSchema,worldSchema,personaSchema,conversationSchema,turnSchema} from '@/lib/validation';
 import {runTurn,AppError} from '@/lib/engine';
+import {llmConfig} from '@/lib/llm';
 import type {Character,World,Persona,Conversation} from '@/lib/types';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -13,13 +14,13 @@ type Context={params:Promise<{path:string[]}>};
 function fail(message:string,status=400):never{throw new AppError(message,status);}
 function json(data:unknown,status=200){return NextResponse.json(data,{status,headers:{'Cache-Control':'no-store'}});}
 async function body(req:NextRequest){if(Number(req.headers.get('content-length')||0)>3_000_000)fail('The upload is too large.',413);const raw=await req.text();if(raw.length>3_000_000)fail('The upload is too large.',413);try{return JSON.parse(raw);}catch{fail('Invalid JSON request.');}}
-async function chatData(c:Conversation,owner:string){return {conversation:c,messages:(await messages(c.id)),memories:(await memories(owner)).filter(m=>c.world_id?m.world_id===c.world_id&&m.persona_id===c.persona_id:!m.world_id&&m.character_id===c.character_ids[0]),relationships:(await db().prepare('SELECT character_id,trust,note FROM relationships WHERE owner_id=? AND scope=?').all(owner,scope(c))),characters:c.character_ids.map(async cid=>(await get<Character>('characters',cid,owner))),world:c.world_id?(await get<World>('worlds',c.world_id,owner)):null,persona:c.persona_id?(await get<Persona>('personas',c.persona_id,owner)):null};}
+async function chatData(c:Conversation,owner:string){return {conversation:c,messages:(await messages(c.id)),memories:(await memories(owner)).filter(m=>c.world_id?m.world_id===c.world_id&&m.persona_id===c.persona_id:!m.world_id&&m.character_id===c.character_ids[0]),relationships:(await db().prepare('SELECT character_id,trust,note FROM relationships WHERE owner_id=? AND scope=?').all(owner,scope(c))),characters:(await Promise.all(c.character_ids.map(cid=>get<Character>('characters',cid,owner)))).filter((character):character is Character=>!!character),world:c.world_id?(await get<World>('worlds',c.world_id,owner)):null,persona:c.persona_id?(await get<Persona>('personas',c.persona_id,owner)):null};}
 async function handle(req:NextRequest,ctx:Context){
  await ensureDatabase();
  const path=(await ctx.params).path,method=req.method;
  if(method!=='GET'){const origin=req.headers.get('origin');const expected=new Set([req.nextUrl.origin,process.env.APP_URL].filter(Boolean));if(origin&&!expected.has(origin))fail('Request origin not allowed.',403);}
  const user=await currentUser();
- if(path[0]==='bootstrap'&&method==='GET')return json({user,characters:(await list<Character>('characters',user?.id||null)),worlds:(await list<World>('worlds',user?.id||null)),personas:user?(await list<Persona>('personas',user.id)):[],conversations:user?(await conversations(user.id)):[],groqReady:!!process.env.GROQ_API_KEY,googleReady:googleReady(),guestAllowed:guestAllowed(),model:process.env.GROQ_MODEL||'llama-3.3-70b-versatile'});
+ if(path[0]==='bootstrap'&&method==='GET')return json({user,characters:(await list<Character>('characters',user?.id||null)),worlds:(await list<World>('worlds',user?.id||null)),personas:user?(await list<Persona>('personas',user.id)):[],conversations:user?(await conversations(user.id)):[],groqReady:!!process.env.GROQ_API_KEY,googleReady:googleReady(),guestAllowed:guestAllowed(),model:llmConfig().model});
  if(path[0]==='auth'){
   if(path[1]==='guest'&&method==='POST')return json(await guest());
   if(path[1]==='logout'&&method==='POST'){const c=await cookies(),token=c.get('sora_session')?.value;if(token)(await db().prepare('DELETE FROM sessions WHERE token_hash=?').run(hash(token)));c.delete('sora_session');return json({ok:true});}
@@ -50,14 +51,14 @@ async function handle(req:NextRequest,ctx:Context){
  }
  if(path[0]==='personas'&&method==='POST'){const input=personaSchema.parse(await body(req));if(input.world_id&&!(await get<World>('worlds',input.world_id,owner)))fail('World not found.',404);return json((await createPersona(owner,input)),201);}
  if(path[0]==='conversations'){
-  if(method==='POST'&&path.length===1){const input=conversationSchema.parse(await body(req));const chars=input.character_ids.map(async cid=>(await get<Character>('characters',cid,owner)));if(chars.some(c=>!c))fail('Character not found.',404);
+  if(method==='POST'&&path.length===1){const input=conversationSchema.parse(await body(req));const chars=await Promise.all(input.character_ids.map(cid=>get<Character>('characters',cid,owner)));if(chars.some(c=>!c))fail('Character not found.',404);
    if(input.world_id){if(!(await get<World>('worlds',input.world_id,owner)))fail('World not found.',404);const p=(await get<Persona>('personas',input.persona_id!,owner));if(!p||p.world_id!==input.world_id)fail('Choose a persona belonging to this world.');const available=new Set((await worldCharacters(input.world_id,owner)).map(c=>c.id));if(input.character_ids.some(cid=>!available.has(cid)))fail('Add your selected characters to this world first.');}
    if(input.scenario_id&&!(await db().prepare('SELECT id FROM scenarios WHERE id=? AND world_id IS ? AND (owner_id IS NULL OR owner_id=?)').get(input.scenario_id,input.world_id,owner)))fail('Scenario not found.',404);
    return json((await startConversation(owner,input)),201);
   }
   const conv=(await conversation(path[1],owner));if(!conv)fail('Conversation not found.',404);
   if(method==='GET')return json(chatData(conv,owner));
-  if(method==='POST'&&path[2]==='messages'){const input=turnSchema.parse(await body(req));if(input.character_ids?.some(cid=>!conv.character_ids.includes(cid)))fail('That character is not in this scene.');const chars=conv.character_ids.map(async cid=>(await get<Character>('characters',cid,owner))!);await runTurn(conv,chars,conv.world_id?(await get<World>('worlds',conv.world_id,owner)):null,conv.persona_id?(await get<Persona>('personas',conv.persona_id,owner)):null,input.content,input.character_ids);return json(chatData((await conversation(conv.id,owner))!,owner));}
+  if(method==='POST'&&path[2]==='messages'){const input=turnSchema.parse(await body(req));if(input.character_ids?.some(cid=>!conv.character_ids.includes(cid)))fail('That character is not in this scene.');const chars=(await Promise.all(conv.character_ids.map(cid=>get<Character>('characters',cid,owner)))).filter((character):character is Character=>!!character);if(chars.length!==conv.character_ids.length)fail('A character in this conversation is no longer available.',404);await runTurn(conv,chars,conv.world_id?(await get<World>('worlds',conv.world_id,owner)):null,conv.persona_id?(await get<Persona>('personas',conv.persona_id,owner)):null,input.content,input.character_ids);return json(chatData((await conversation(conv.id,owner))!,owner));}
   if(method==='POST'&&path[2]==='memories'){const input=z.object({content:z.string().trim().min(1).max(1000),private:z.boolean().default(true)}).parse(await body(req));(await db().prepare('INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?,?)').run(id(),owner,conv.id,conv.world_id,conv.persona_id,conv.world_id?null:conv.character_ids[0],'fact',input.content,1,1,JSON.stringify(input.private?[owner]:conv.character_ids),now()));return json(chatData(conv,owner));}
   if(method==='DELETE'&&path.length===2){(await db().prepare('DELETE FROM conversations WHERE id=? AND owner_id=?').run(conv.id,owner));return json({ok:true});}
  }
