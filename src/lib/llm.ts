@@ -6,8 +6,8 @@
  * Model IDs must be ones currently enabled for the Groq project.
  */
 export const GROQ_MODELS = {
-  roleplay: 'llama-3.3-70b-versatile',
-  fast: 'llama-3.1-8b-instant',
+  roleplay: 'openai/gpt-oss-120b',
+  fast: 'openai/gpt-oss-20b',
   reasoning: 'openai/gpt-oss-120b',
 } as const;
 
