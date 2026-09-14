@@ -50,3 +50,40 @@ html[data-theme='dark'] .composer-area{background:rgba(23,19,30,.72)}
 html[data-theme='dark'] .ai-character-builder{background:linear-gradient(145deg,rgba(42,34,54,.95),rgba(34,28,44,.9));border-color:rgba(200,167,237,.2)}
 html[data-theme='dark'] .ai-builder-heading>svg{background:#392c49}
 html[data-theme='dark'] .language-toggle{background:#251f2f;color:var(--purple);border-color:var(--line)}
+
+/* Apple-inspired motion: brief, purposeful, interruptible, and compositor-friendly. */
+:root{--motion-spring:cubic-bezier(.2,.8,.2,1);--motion-snappy:cubic-bezier(.32,.72,0,1);--motion-fast:140ms;--motion-base:240ms;--motion-page:420ms}
+@keyframes app-shell-in{from{opacity:0;transform:translateY(7px) scale(.995)}to{opacity:1;transform:none}}
+@keyframes content-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes modal-scrim-in{from{opacity:0}to{opacity:1}}
+@keyframes modal-card-in{from{opacity:0;transform:translateY(10px) scale(.975)}to{opacity:1;transform:none}}
+@keyframes drawer-in{from{transform:translateX(-100%)}to{transform:none}}
+@keyframes message-in{from{opacity:0;transform:translateY(7px) scale(.985)}to{opacity:1;transform:none}}
+.sidebar{animation:content-in var(--motion-page) var(--motion-spring) both}
+.topbar{animation:content-in var(--motion-page) 60ms var(--motion-spring) both}
+.page-enter{animation:app-shell-in var(--motion-page) var(--motion-spring) both}
+.page-enter>*{animation:content-in 380ms var(--motion-spring) both}
+.page-enter>*:nth-child(2){animation-delay:45ms}.page-enter>*:nth-child(3){animation-delay:80ms}.page-enter>*:nth-child(4){animation-delay:110ms}.page-enter>*:nth-child(n+5){animation-delay:135ms}
+.character-grid>*,.world-grid>*,.persona-grid>*{animation:content-in 360ms var(--motion-spring) both}
+.character-grid>*:nth-child(2),.world-grid>*:nth-child(2),.persona-grid>*:nth-child(2){animation-delay:35ms}.character-grid>*:nth-child(3),.world-grid>*:nth-child(3),.persona-grid>*:nth-child(3){animation-delay:65ms}.character-grid>*:nth-child(n+4),.world-grid>*:nth-child(n+4),.persona-grid>*:nth-child(n+4){animation-delay:90ms}
+.button,.filter,.language-toggle,.icon-button,.round-arrow,.scene-choices button,.avatar-options button,.scene-faces button,.import-list button,nav a,.top-tabs a,.profile,.recent-list>a,.world-invitation,.character-card,.world-card,.creation-cta,.create-option{transition:transform var(--motion-fast) var(--motion-snappy),box-shadow var(--motion-base) var(--motion-spring),border-color var(--motion-base) ease,background-color var(--motion-base) ease,color var(--motion-base) ease,opacity var(--motion-base) ease}
+.button svg,.round-arrow svg,.text-link svg,.recent-list>a>svg,.creation-cta>svg{transition:transform var(--motion-base) var(--motion-spring)}
+.field input,.field textarea,.field select,.composer textarea,.search{transition:border-color var(--motion-base) ease,background-color var(--motion-base) ease,box-shadow var(--motion-base) ease,transform var(--motion-base) var(--motion-spring)}
+.field input:focus,.field textarea:focus,.field select:focus,.composer textarea:focus,.search:focus-within{box-shadow:0 0 0 4px rgba(109,76,161,.1)}
+.button:active,.filter:active,.language-toggle:active,.icon-button:active,.scene-choices button:active,.avatar-options button:active,.import-list button:active{transform:scale(.96);transition-duration:70ms}
+.character-card:active,.world-card:active,.creation-cta:active,.create-option:active,.recent-list>a:active{transform:scale(.985);transition-duration:70ms}
+.filter.selected,.scene-choices button.selected,.avatar-options button.selected{animation:message-in var(--motion-base) var(--motion-snappy)}
+.modal-backdrop{animation:modal-scrim-in 180ms ease-out both}.modal{animation:modal-card-in 320ms var(--motion-snappy) both}
+.advanced[open]>*:not(summary){animation:content-in var(--motion-base) var(--motion-spring) both}
+.message:last-child{transform-origin:bottom left;animation:message-in 300ms var(--motion-spring) both}.message-user:last-child{transform-origin:bottom right}
+.trust-track span{transition:width 520ms var(--motion-spring)}
+.success-check{animation:modal-card-in 420ms var(--motion-spring) both}
+.nav-scrim{animation:modal-scrim-in 180ms ease-out both}.sidebar.mobile-open{animation:drawer-in 320ms var(--motion-snappy) both}
+@media(hover:hover){
+ nav a:hover,.top-tabs a:hover,.profile:hover,.recent-list>a:hover{transform:translateY(-1px)}
+ .character-card:hover,.world-card:hover,.creation-cta:hover,.create-option:hover,.world-invitation:hover{transform:translateY(-3px);box-shadow:0 22px 58px rgba(66,43,102,.17)}
+ .button:hover svg,.text-link:hover svg,.recent-list>a:hover>svg,.creation-cta:hover>svg{transform:translateX(2px)}
+ .icon-button:hover,.language-toggle:hover,.scene-faces button:hover,.avatar-options button:hover{transform:scale(1.04)}
+}
+.reduce-effects *,.reduce-effects *:before,.reduce-effects *:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+@media(prefers-reduced-transparency:reduce){.glass{backdrop-filter:none;background:rgba(255,255,255,.96)}html[data-theme='dark'] .glass{background:rgba(31,25,41,.97)}}
