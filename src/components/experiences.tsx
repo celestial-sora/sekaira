@@ -554,6 +554,10 @@ export function Chat({
   const router = useRouter(),
     [chat, setChat] = useState<ChatData | null>(null),
     [message, setMessage] = useState(""),
+    [pendingMessage, setPendingMessage] = useState<{
+      id: string;
+      content: string;
+    } | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [speaker, setSpeaker] = useState("auto"),
@@ -582,17 +586,22 @@ export function Chat({
   async function send(e: FormEvent) {
     e.preventDefault();
     if (!message.trim() || busy) return;
+    const content = message.trim();
     setBusy(true);
     setError("");
+    setMessage("");
+    setPendingMessage({ id: `pending-${Date.now()}`, content });
     try {
       const c = await api<ChatData>(`conversations/${id}/messages`, "POST", {
-        content: message,
+        content,
         character_ids: speaker === "auto" ? undefined : [speaker],
       });
       setChat(c);
-      setMessage("");
+      setPendingMessage(null);
       await refresh();
     } catch (e) {
+      setPendingMessage(null);
+      setMessage(content);
       setError((e as Error).message);
     } finally {
       setBusy(false);
@@ -642,6 +651,7 @@ export function Chat({
     state = JSON.parse(chat.conversation.state),
     emotion = busy ? "thinking" : last?.emotion || "idle",
     emotionLabel = localizedLabel(emotion);
+  const userLabel = chat.persona?.name || data.user?.name || text("You", "คุณ");
   function localizedLabel(value: string) {
     if (language !== "th") return value;
     return (
@@ -708,7 +718,7 @@ export function Chat({
                 <div>
                   <div className="message-author">
                     {m.role === "user"
-                      ? chat.persona?.name || data.user?.name
+                      ? userLabel
                       : m.role === "director"
                         ? text("Scenario Director", "ผู้กำกับซีนาริโอ")
                         : c?.name}
@@ -731,6 +741,18 @@ export function Chat({
               </article>
             );
           })}
+          {pendingMessage && (
+            <article
+              key={pendingMessage.id}
+              className="message message-user message-pending"
+              aria-label={text("Sending message", "กำลังส่งข้อความ")}
+            >
+              <div>
+                <div className="message-author">{userLabel}</div>
+                <div className="message-content">{pendingMessage.content}</div>
+              </div>
+            </article>
+          )}
           {busy && (
             <div className="thinking">
               <span />

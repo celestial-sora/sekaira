@@ -76,6 +76,7 @@ html[data-theme='dark'] .language-toggle{background:#251f2f;color:var(--purple);
 .modal-backdrop{animation:modal-scrim-in 180ms ease-out both}.modal{animation:modal-card-in 320ms var(--motion-snappy) both}
 .advanced[open]>*:not(summary){animation:content-in var(--motion-base) var(--motion-spring) both}
 .message:last-child{transform-origin:bottom left;animation:message-in 300ms var(--motion-spring) both}.message-user:last-child{transform-origin:bottom right}
+.message-pending{transform-origin:bottom right;animation:message-in 300ms var(--motion-spring) both}
 .trust-track span{transition:width 520ms var(--motion-spring)}
 .success-check{animation:modal-card-in 420ms var(--motion-spring) both}
 .nav-scrim{animation:modal-scrim-in 180ms ease-out both}.sidebar.mobile-open{animation:drawer-in 320ms var(--motion-snappy) both}
