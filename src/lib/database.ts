@@ -17,7 +17,7 @@ function connectionString(){
   const isSupabase=host.endsWith('.supabase.co')&&Boolean(projectRef);
   const poolerHost=isSupabase?'aws-0-ap-northeast-1.pooler.supabase.com':host;
   const poolerUser=isSupabase&&!user.includes('.')?`${user}.${projectRef}`:user;
-  return `postgresql://${encodeURIComponent(poolerUser)}:${encodeURIComponent(password)}@${poolerHost}:5432/${database}?sslmode=require`;
+  return `postgresql://${encodeURIComponent(poolerUser)}:${encodeURIComponent(password)}@${poolerHost}:5432/${database}`;
  }
  return configured||'';
 }
