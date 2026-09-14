@@ -4,6 +4,7 @@ import type {Character,World,Persona,Conversation,Memory} from './types';
 import {directorSchema,replySchema,extractedSchema} from './validation';
 import {groqModelCandidates,llmConfig} from './llm';
 import {memoryRecipients,retrieveCharacterMemories} from './memory';
+import {hasUnexpectedRepetition,labelDialogueHistory} from './roleplay-quality';
 
 export class AppError extends Error {constructor(message:string,public status=400){super(message);}}
 export function retrieveMemory(all:Memory[],conv:Conversation,charId:string,query:string):Memory[]{
@@ -32,7 +33,7 @@ export async function runTurn(conv:Conversation,chars:Character[],world:World|nu
  const lease=id();const acquired=(await db().prepare('INSERT INTO turn_locks (conversation_id,token,expires_at) VALUES (?,?,?) ON CONFLICT(conversation_id) DO UPDATE SET token=excluded.token,expires_at=excluded.expires_at WHERE turn_locks.expires_at<?').run(conv.id,lease,Date.now()+240000,Date.now()));
  if(!acquired.changes)throw new AppError('A reply is already being written for this conversation.',409);
  try{
- const allMemories=(await memories(conv.owner_id)),history=(await messages(conv.id)).slice(-16).map(m=>({role:m.role,character_id:m.character_id,content:m.content}));
+ const allMemories=(await memories(conv.owner_id)),rawHistory=(await messages(conv.id)).slice(-16),history=labelDialogueHistory(rawHistory,chars);
  const publicPersona=persona?{name:persona.name,species:persona.species,role:persona.role,rank:persona.rank,faction:persona.faction,abilities:persona.abilities,appearance:persona.appearance,public_facts:persona.public_facts}:null;
  let director:z.infer<typeof directorSchema>|null=null;
  const candidates=selected?.length?chars.filter(c=>selected.includes(c.id)):chars;
@@ -48,7 +49,15 @@ export async function runTurn(conv:Conversation,chars:Character[],world:World|nu
  for(const c of active){
   const remembered=retrieveMemory(allMemories,conv,c.id,content);
   const character={name:c.name,description:c.description,personality:c.personality,backstory:c.backstory,speaking_style:c.speaking_style,likes:c.likes,dislikes:c.dislikes,relationship_behavior:c.relationship_behavior,example_dialogue:c.example_dialogue,lore:c.lore};
-  const reply=await groq(`${ROLEPLAY_RULES} Speak only as the supplied character. Only use facts in your own profile, public persona, observable scene, recent dialogue and permitted memories. Unknown private facts are unknown. Do not claim to know another character’s memory. Respond naturally in 1–3 paragraphs. trust_delta is -3 to 3 and should usually be 0; trust grows slowly. JSON: {"dialogue":"your reply and optional actions in asterisks","emotion":"idle|happy|shy|angry|sad|surprised","trust_delta":0,"relationship_note":"brief evidence or empty string"}.`,JSON.stringify({character,persona:publicPersona,world:world?{name:world.name,locations:world.locations,rules:world.rules}:null,scene:director?.narration||null,memories:remembered.map(m=>m.content),relationship:(await db().prepare('SELECT trust,note FROM relationships WHERE owner_id=? AND scope=? AND character_id=?').get(conv.owner_id,scope(conv),c.id))||null,recent:history,other_replies:replies.map(r=>({name:r.character.name,dialogue:r.reply.dialogue})),user_message:content}),replySchema);
+  const replySystem=`${ROLEPLAY_RULES} Speak only as the supplied character and never imitate the User, Narrator, or another named speaker. Continue from the latest user message instead of restating, paraphrasing, or copying earlier dialogue. Do not repeat a sentence or paragraph within the reply. Only use facts in your own profile, public persona, observable scene, recent dialogue and permitted memories. Unknown private facts are unknown. Do not claim to know another character’s memory. Respond naturally in 1–3 paragraphs. trust_delta is -3 to 3 and should usually be 0; trust grows slowly. JSON: {"dialogue":"your reply and optional actions in asterisks","emotion":"idle|happy|shy|angry|sad|surprised","trust_delta":0,"relationship_note":"brief evidence or empty string"}.`;
+  const replyInput={character,persona:publicPersona,world:world?{name:world.name,locations:world.locations,rules:world.rules}:null,scene:director?.narration||null,memories:remembered.map(m=>m.content),relationship:(await db().prepare('SELECT trust,note FROM relationships WHERE owner_id=? AND scope=? AND character_id=?').get(conv.owner_id,scope(conv),c.id))||null,recent:history,other_replies:replies.map(r=>({speaker:r.character.name,dialogue:r.reply.dialogue})),user_message:content};
+  const previousByCharacter=rawHistory.filter(message=>message.role==='assistant'&&message.character_id===c.id).map(message=>message.content);
+  let reply=await groq(replySystem,JSON.stringify(replyInput),replySchema);
+  if(hasUnexpectedRepetition(reply.dialogue,previousByCharacter)){
+   const rejected=reply.dialogue;
+   reply=await groq(`${replySystem} The previous draft was rejected for looping or copying prior dialogue. Produce a substantially new continuation without repeating it.`,JSON.stringify({...replyInput,rejected_draft:rejected}),replySchema);
+   if(hasUnexpectedRepetition(reply.dialogue,[...previousByCharacter,rejected]))throw new AppError('The AI repeated an earlier reply. Nothing was saved; please try again.',502);
+  }
   replies.push({character:c,reply});
  }
  const extraction=await groq(`${ROLEPLAY_RULES} Extract up to 4 important facts, promises, relationship events, or discoveries explicitly established in this public interaction. Record only what the active witnesses could observe or hear. Exclude speculation, inferred private thoughts, secrets not revealed in the interaction, and routine greetings. Empty array is valid. importance/confidence between 0 and 1. JSON: {"memories":[{"content":"fact","type":"fact|promise|relationship|event|discovery","importance":0.8,"confidence":0.9}]}.`,JSON.stringify({user:content,narration:director?.narration,replies:replies.map(r=>({name:r.character.name,content:r.reply.dialogue}))}),extractedSchema);
