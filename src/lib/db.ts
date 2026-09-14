@@ -2,6 +2,8 @@ import {randomUUID} from 'node:crypto';
 import {db,transaction} from './database';
 export {db,transaction} from './database';
 import type {Character,World,Persona,Conversation,Message,Memory} from './types';
+export class DatabaseContextError extends Error {constructor(message:string,public status=400){super(message);this.name='DatabaseContextError';}}
+export type ConversationInput={world_id:string|null;persona_id:string|null;scenario_id:string|null;character_ids:string[]};
 let initialized:Promise<void>|undefined;
 export async function ensureDatabase(){initialized??=transaction(()=>seed(db())).catch(e=>{initialized=undefined;throw e;});await initialized;}
 export const id = () => randomUUID();
@@ -25,8 +27,30 @@ export async function messages(convId:string):Promise<Message[]>{return (await d
 export async function memories(owner:string):Promise<Memory[]>{return (await db().prepare('SELECT * FROM memories WHERE owner_id=? ORDER BY created_at DESC').all(owner)).map(r=>({...r,known_by:JSON.parse(r.known_by as string)}) as Memory);}
 export async function addMessage(convId:string,role:Message['role'],characterId:string|null,content:string,emotion='idle'){(await db().prepare('INSERT INTO messages VALUES (?,?,?,?,?,?,?)').run(id(),convId,role,characterId,content,emotion,now()));}
 export function scope(c:Conversation){return c.world_id?`world:${c.world_id}:persona:${c.persona_id??''}`:`character:${c.character_ids[0]}`;}
-export async function startConversation(owner:string,input:{world_id:string|null;persona_id:string|null;scenario_id:string|null;character_ids:string[]}):Promise<Conversation> {
-  return (await transaction(async ()=>{const chars=(await Promise.all(input.character_ids.map(cid=>get<Character>('characters',cid,owner)))) as Character[];const world=input.world_id?(await get<World>('worlds',input.world_id,owner)):null;const cid=id(),stamp=now(),sceneId=id();
+export async function loadConversationContext(owner:string,input:ConversationInput):Promise<{characters:Character[];world:World|null;persona:Persona|null}> {
+  if(input.character_ids.length<1||input.character_ids.length>5||new Set(input.character_ids).size!==input.character_ids.length)throw new DatabaseContextError('Choose between one and five distinct characters.');
+  const loaded=await Promise.all(input.character_ids.map(cid=>get<Character>('characters',cid,owner)));
+  if(loaded.some((character):character is null=>character===null))throw new DatabaseContextError('Character not found.',404);
+  const characters=loaded as Character[];
+  if(!input.world_id){
+    if(input.persona_id||input.scenario_id||characters.length!==1)throw new DatabaseContextError('Standalone chat has one character and no required persona or scenario.');
+    return {characters,world:null,persona:null};
+  }
+  const [world,persona,availableRows,scenario]=await Promise.all([
+    get<World>('worlds',input.world_id,owner),
+    input.persona_id?get<Persona>('personas',input.persona_id,owner):Promise.resolve(null),
+    db().prepare('SELECT character_id FROM world_characters WHERE world_id=?').all(input.world_id),
+    input.scenario_id?db().prepare('SELECT id FROM scenarios WHERE id=? AND world_id=? AND (owner_id IS NULL OR owner_id=?)').get(input.scenario_id,input.world_id,owner):Promise.resolve(undefined),
+  ]);
+  if(!world)throw new DatabaseContextError('World not found.',404);
+  if(!persona||persona.world_id!==world.id)throw new DatabaseContextError('Choose a persona belonging to this world.');
+  const available=new Set(availableRows.map(row=>row.character_id as string));
+  if(input.character_ids.some(characterId=>!available.has(characterId)))throw new DatabaseContextError('Add your selected characters to this world first.');
+  if(input.scenario_id&&!scenario)throw new DatabaseContextError('Scenario not found.',404);
+  return {characters,world,persona};
+}
+export async function startConversation(owner:string,input:ConversationInput):Promise<Conversation> {
+  return (await transaction(async ()=>{const {characters:chars,world}=await loadConversationContext(owner,input);const cid=id(),stamp=now(),sceneId=id();
     (await db().prepare('INSERT INTO conversations VALUES (?,?,?,?,?,?,?,?,?)').run(cid,owner,input.world_id,input.persona_id,input.scenario_id,world?.name||chars[0].name,JSON.stringify({summary:world?.world_state||'',events:[]}),stamp,stamp));
     (await db().prepare('INSERT INTO scenes VALUES (?,?,?)').run(sceneId,cid,world?.locations.split('\n')[0]||'An open beginning'));
     for(const char of chars){(await db().prepare('INSERT INTO scene_characters VALUES (?,?)').run(sceneId,char.id));if(char.greeting)(await addMessage(cid,'assistant',char.id,char.greeting,'happy'));}

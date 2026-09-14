@@ -1,7 +1,8 @@
 PRAGMA foreign_keys = ON;
 PRAGMA journal_mode = WAL;
-CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, google_sub TEXT UNIQUE, name TEXT NOT NULL, guest INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, google_sub TEXT UNIQUE, name TEXT NOT NULL, guest INTEGER NOT NULL DEFAULT 0 CHECK(guest IN (0,1)));
 CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS session_expiry ON sessions(expires_at);
 CREATE TABLE IF NOT EXISTS worlds (id TEXT PRIMARY KEY, owner_id TEXT REFERENCES users(id), data TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS scenarios (id TEXT PRIMARY KEY, world_id TEXT REFERENCES worlds(id), owner_id TEXT REFERENCES users(id), data TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS avatars (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), type TEXT NOT NULL CHECK(type IN ('image','vrm','live2d')), asset_url TEXT NOT NULL);
@@ -15,5 +16,6 @@ CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, conversation_id TEXT N
 CREATE TABLE IF NOT EXISTS memories (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE, world_id TEXT REFERENCES worlds(id), persona_id TEXT REFERENCES personas(id), character_id TEXT REFERENCES characters(id), type TEXT NOT NULL, content TEXT NOT NULL, importance REAL NOT NULL, confidence REAL NOT NULL, known_by TEXT NOT NULL, created_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS memory_scope ON memories(owner_id, world_id, persona_id, character_id);
 CREATE INDEX IF NOT EXISTS message_conversation ON messages(conversation_id, created_at);
+CREATE INDEX IF NOT EXISTS conversation_owner_updated ON conversations(owner_id, updated_at);
 CREATE TABLE IF NOT EXISTS relationships (owner_id TEXT NOT NULL REFERENCES users(id), scope TEXT NOT NULL, character_id TEXT NOT NULL REFERENCES characters(id), trust INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', PRIMARY KEY(owner_id, scope, character_id));
 CREATE TABLE IF NOT EXISTS turn_locks (conversation_id TEXT PRIMARY KEY REFERENCES conversations(id) ON DELETE CASCADE, token TEXT NOT NULL, expires_at INTEGER NOT NULL);
