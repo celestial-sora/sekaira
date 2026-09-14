@@ -16,3 +16,5 @@
 .character-card,.character-card .portrait{aspect-ratio:3/4}.character-card{height:auto;min-height:0}.character-card .portrait{height:100%;min-height:0}
 @media(max-width:900px){.sidebar.mobile-open{overflow-y:auto}.sidebar.mobile-open .sidebar-story{margin-top:28px}.main-content{padding-bottom:calc(32px + env(safe-area-inset-bottom))}.app-footer{padding-bottom:calc(15px + env(safe-area-inset-bottom))}}
 @media(max-width:600px){.welcome-line{align-items:flex-start;flex-direction:column;gap:5px;margin-top:2px}.welcome-line>span:last-child{font-size:9px}.character-card{height:auto}.character-card .portrait{min-height:190px}.chat-main{padding-bottom:env(safe-area-inset-bottom)}}
+.language-toggle{border:1px solid var(--line);background:rgba(255,255,255,.72);color:var(--purple);border-radius:99px;padding:6px 9px;font-size:10px;font-weight:800;letter-spacing:.05em;cursor:pointer}
+.language-toggle:hover{background:#eadff6}

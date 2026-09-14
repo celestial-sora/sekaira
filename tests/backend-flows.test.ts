@@ -17,8 +17,8 @@ const worldInput=(name:string)=>({name,description:'Test world',lore:'',rules:''
 const personaInput=(name:string,world_id:string)=>({name,description:'Test persona',world_id,species:'Human',role:'Traveler',rank:'',faction:'',abilities:'',appearance:'',backstory:'',personality:'',public_facts:'',secret_facts:''});
 
 test('closed beta backend flows',async t=>{
-  await db().prepare('INSERT INTO users VALUES (?,?,?,?)').run('owner-a',null,'Owner A',0);
-  await db().prepare('INSERT INTO users VALUES (?,?,?,?)').run('owner-b',null,'Owner B',0);
+  await db().prepare('INSERT INTO users (id,google_sub,name,picture,guest) VALUES (?,?,?,?,?)').run('owner-a',null,'Owner A',null,0);
+  await db().prepare('INSERT INTO users (id,google_sub,name,picture,guest) VALUES (?,?,?,?,?)').run('owner-b',null,'Owner B',null,0);
 
   await t.test('starts a standalone character conversation without world, persona, or scenario',async()=>{
     const character=await createCharacter('owner-a',characterInput('Standalone'));
@@ -64,6 +64,7 @@ test('closed beta backend flows',async t=>{
     assert.equal(matchesOAuthState(`${state}x`,state),false);
     assert.equal(googleProfileSchema.safeParse({sub:'google-user',email_verified:false}).success,false);
     assert.equal(googleProfileSchema.safeParse({sub:'google-user',email_verified:true}).success,true);
+    assert.equal(googleProfileSchema.safeParse({sub:'google-user',email_verified:true,picture:'https://lh3.googleusercontent.com/a/example'}).success,true);
   });
 });
 

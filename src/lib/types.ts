@@ -6,5 +6,5 @@ export type Conversation = { id: string; owner_id: string; name: string; world_i
 export type Message = { id: string; conversation_id: string; role: 'user' | 'assistant' | 'director'; character_id: string | null; content: string; emotion: string; created_at: string };
 export type Memory = { id: string; owner_id: string; conversation_id: string; world_id: string | null; persona_id: string | null; character_id: string | null; type: string; content: string; importance: number; confidence: number; known_by: string[]; created_at: string };
 export type Relationship = { character_id: string; trust: number; note: string };
-export type Bootstrap = { user: {id:string;name:string;guest:boolean} | null; characters: Character[]; worlds: World[]; personas: Persona[]; conversations: Conversation[]; groqReady: boolean; googleReady: boolean; guestAllowed: boolean; model: string };
+export type Bootstrap = { user: {id:string;name:string;picture:string|null;guest:boolean} | null; characters: Character[]; worlds: World[]; personas: Persona[]; conversations: Conversation[]; groqReady: boolean; googleReady: boolean; guestAllowed: boolean; model: string };
 export type ChatData = { conversation: Conversation; messages: Message[]; memories: Memory[]; relationships: Relationship[]; characters: Character[]; world: World | null; persona: Persona | null; location?: string };
