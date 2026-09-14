@@ -13,10 +13,11 @@ export async function groq<T>(system:string,user:string,schema:z.ZodType<T>):Pro
  const apiKey=process.env.GROQ_API_KEY?.trim();
  if(!apiKey)throw new AppError('Groq is not connected yet. Add GROQ_API_KEY to .env.local to enable AI replies.',503);
  const llm=llmConfig(),models=groqModelCandidates(llm);
+ const jsonSchema=z.toJSONSchema(schema) as Record<string,unknown>;delete jsonSchema.$schema;
  let lastStatus=502;
  for(const [index,model] of models.entries()){
   let response:Response;
-  try{response=await fetch(llm.endpoint,{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model,messages:[{role:'system',content:system},{role:'user',content:user}],response_format:{type:'json_object'},temperature:.75,max_completion_tokens:1600}),signal:AbortSignal.timeout(45000)});}catch{if(index<models.length-1)continue;throw new AppError('Groq did not respond in time. Your message has not been saved; please try again.',504);}
+  try{response=await fetch(llm.endpoint,{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model,messages:[{role:'system',content:system},{role:'user',content:user}],response_format:{type:'json_schema',json_schema:{name:'oonchai_response',strict:true,schema:jsonSchema}},temperature:.75,reasoning_effort:'low',max_completion_tokens:4000}),signal:AbortSignal.timeout(45000)});}catch{if(index<models.length-1)continue;throw new AppError('Groq did not respond in time. Your message has not been saved; please try again.',504);}
   if(response.ok){try{const json=await response.json();return schema.parse(JSON.parse(json.choices[0].message.content));}catch{if(index<models.length-1)continue;throw new AppError('The AI returned an incomplete response. Please retry; no partial turn was saved.',502);}}
   lastStatus=response.status;
   if(response.status===401)throw new AppError('Groq rejected the API key. Check the server configuration.',502);

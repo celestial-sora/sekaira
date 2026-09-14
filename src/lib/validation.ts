@@ -12,3 +12,17 @@ export const emotion=z.enum(['idle','talking','happy','shy','angry','sad','surpr
 export const replySchema=z.object({dialogue:z.string().min(1).max(8000),emotion:emotion.default('idle'),trust_delta:z.number().int().min(-3).max(3).default(0),relationship_note:z.string().max(300).default('')});
 export const directorSchema=z.object({narration:z.string().max(3000),state_summary:z.string().max(4000),event:z.string().max(500).default(''),active_character_ids:z.array(z.string()).max(3)});
 export const extractedSchema=z.object({memories:z.array(z.object({content:z.string().min(1).max(1000),type:z.enum(['fact','promise','relationship','event','discovery']),importance:z.number().min(0).max(1),confidence:z.number().min(0).max(1)})).max(4)});
+export const characterGenerationRequestSchema=z.object({prompt:z.string().trim().min(12,'Describe the character you want in a little more detail.').max(2000)});
+export const characterGenerationSchema=z.object({
+ name:z.string().trim().min(1).max(100),
+ tags:z.array(z.string().trim().min(1).max(30)).min(2).max(5),
+ description:z.string().trim().min(1).max(1000),
+ personality:z.string().trim().min(1).max(1500),
+ backstory:z.string().trim().max(2000),
+ speaking_style:z.string().trim().min(1).max(600),
+ relationship_behavior:z.string().trim().min(1).max(600),
+ likes:z.string().trim().max(600),
+ dislikes:z.string().trim().max(600),
+ greeting:z.string().trim().min(1).max(1200),
+ example_dialogue:z.string().trim().min(1).max(1600),
+});

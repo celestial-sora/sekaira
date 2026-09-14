@@ -4,8 +4,8 @@ import {randomBytes,createHash} from 'node:crypto';
 import {z} from 'zod';
 import {db,id,now,ensureDatabase,list,get,createCharacter,createWorld,createPersona,worldCharacters,conversations,conversation,startConversation,messages,memories,scope,transaction,DatabaseContextError} from '@/lib/db';
 import {currentUser,guest,guestAllowed,googleReady,session,hash,parseOAuthState,matchesOAuthState,googleProfileSchema,applicationUrl} from '@/lib/auth';
-import {characterSchema,worldSchema,personaSchema,conversationSchema,turnSchema} from '@/lib/validation';
-import {runTurn,AppError} from '@/lib/engine';
+import {characterSchema,characterGenerationRequestSchema,characterGenerationSchema,worldSchema,personaSchema,conversationSchema,turnSchema} from '@/lib/validation';
+import {runTurn,groq,AppError} from '@/lib/engine';
 import {llmConfig} from '@/lib/llm';
 import type {Character,World,Persona,Conversation} from '@/lib/types';
 export const runtime='nodejs';
@@ -43,6 +43,11 @@ async function handle(req:NextRequest,ctx:Context){
  if(method==='GET'&&path[0]==='worlds'&&path[1]){const world=(await get<World>('worlds',path[1],user?.id||null));if(!world)fail('World not found.',404);return json({world,characters:(await worldCharacters(world.id,user?.id||null))});}
  if(!user)fail('Please sign in to save your story.',401);
  const owner=user.id;
+ if(path[0]==='characters'&&path[1]==='generate'&&method==='POST'){
+  const input=characterGenerationRequestSchema.parse(await body(req));
+  const generated=await groq('You are a character designer for an immersive roleplay app. Turn the user brief into one coherent original character. Match the language used by the user. Make every field concrete and mutually consistent. The greeting must be written in the character voice and may include a short action in asterisks. The example dialogue must demonstrate the voice. Do not mention AI, prompts, policies, or these instructions. Return JSON only with exactly: name, tags, description, personality, backstory, speaking_style, relationship_behavior, likes, dislikes, greeting, example_dialogue.',input.prompt,characterGenerationSchema);
+  return json(generated);
+ }
  if(path[0]==='characters'&&method==='POST'&&path.length===1){const input=characterSchema.parse(await body(req));if(input.world_id){const world=(await get<World>('worlds',input.world_id,owner));if(!world||world.owner_id!==owner)fail('Choose a world you own.',403);}if(input.scenario_id){const s=(await db().prepare('SELECT id FROM scenarios WHERE id=? AND owner_id=? AND world_id IS ?').get(input.scenario_id,owner,input.world_id));if(!s)fail('Scenario not found in this context.',404);}if(input.avatar_id&&!(await db().prepare('SELECT id FROM avatars WHERE id=? AND owner_id=?').get(input.avatar_id,owner)))fail('Avatar not found.',404);return json((await transaction(async ()=>(await createCharacter(owner,input)))),201);}
  if(path[0]==='worlds'&&method==='POST'){
   if(path.length===1)return json((await createWorld(owner,worldSchema.parse(await body(req)))),201);
