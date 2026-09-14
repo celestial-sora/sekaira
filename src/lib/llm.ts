@@ -1,5 +1,5 @@
 /**
- * Sekaira's single model-selection point.
+ * Oonchai's single model-selection point.
  *
  * To change the default in source, update DEFAULT_ROLEPLAY_MODEL below.
  * To select a model per environment without a code change, set GROQ_MODEL.

@@ -6,7 +6,7 @@ import {join} from 'node:path';
 import {db,createCharacter,createPersona,createWorld,startConversation,conversation,DatabaseContextError} from '../src/lib/db';
 import {parseOAuthState,matchesOAuthState,googleProfileSchema} from '../src/lib/auth';
 
-const testDirectory=mkdtempSync(join(tmpdir(),'sekaira-backend-'));
+const testDirectory=mkdtempSync(join(tmpdir(),'oonchai-backend-'));
 process.env.DATABASE_PATH=join(testDirectory,'test.sqlite');
 delete process.env.DATABASE_URL;
 

@@ -1,4 +1,4 @@
-# Sekaira: two equal entry paths
+# Oonchai: two equal entry paths
 
 Source: https://app.notion.com/p/3da7ab0c0f3e81818f72f19c809fb805
 The user's clarification on 2026-09-13 takes precedence over any ambiguous document wording. The initial workspace contained no application source. Groq is the selected model provider.
