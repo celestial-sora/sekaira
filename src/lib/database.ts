@@ -12,7 +12,13 @@ function connectionString(){
  const configured=process.env.DATABASE_URL?.trim();
  if(configured&&/^postgres(?:ql)?:\/\//i.test(configured))return configured;
  const {POSTGRES_HOST:host,POSTGRES_USER:user,POSTGRES_PASSWORD:password,POSTGRES_DATABASE:database}=process.env;
- if(host&&user&&password&&database)return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:5432/${database}?sslmode=require`;
+ if(host&&user&&password&&database){
+  const projectRef=process.env.SUPABASE_PROJECT_REF?.trim();
+  const isSupabase=host.endsWith('.supabase.co')&&Boolean(projectRef);
+  const poolerHost=isSupabase?'aws-0-ap-northeast-1.pooler.supabase.com':host;
+  const poolerUser=isSupabase&&!user.includes('.')?`${user}.${projectRef}`:user;
+  return `postgresql://${encodeURIComponent(poolerUser)}:${encodeURIComponent(password)}@${poolerHost}:5432/${database}?sslmode=require`;
+ }
  return configured||'';
 }
 export function hasPostgres(){return /^postgres(?:ql)?:\/\//i.test(connectionString());}
