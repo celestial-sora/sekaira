@@ -1,14 +1,217 @@
-'use client';
-import Link from 'next/link';
-import {ArrowRight,ChevronRight,Plus,Sparkles} from 'lucide-react';
-import type {Character,World} from '@/lib/types';
-import type {CSSProperties,ReactNode} from 'react';
-import {useLanguage} from './i18n';
-export async function api<T>(path:string,method='GET',data?:unknown):Promise<T>{const r=await fetch(`/api/${path}`,{method,headers:data?{'Content-Type':'application/json'}:undefined,body:data?JSON.stringify(data):undefined,cache:'no-store'});let result;try{result=await r.json();}catch{throw new Error('The server is unavailable. Please try again.');}if(!r.ok)throw new Error(result.error||'Unable to complete this action.');return result;}
-export function Portrait({avatar='0',className='',name=''}:{avatar?:string;className?:string;name?:string}){const remote=avatar.startsWith('https://')||avatar.startsWith('http://');const custom=avatar.startsWith('data:')||remote;const style:CSSProperties=custom?{backgroundImage:`url("${avatar}")`,backgroundSize:'cover',backgroundPosition:'center 35%'}:{backgroundPosition:`${Number(avatar)*25}% 35%`};return <span role={name?'img':undefined} aria-label={name||undefined} aria-hidden={!name} className={`portrait ${custom?'portrait-custom':''} ${className}`} style={style}/>;}
-export function SectionTitle({children,href,label}:{children:ReactNode;href?:string;label?:string}){const {text}=useLanguage();return <div className="section-title"><h2>{children}</h2>{href&&<Link href={href}>{label??text('View all','ดูทั้งหมด')}<ChevronRight size={16}/></Link>}</div>;}
-export function CharacterCard({character:c}:{character:Character}){const {text}=useLanguage();return <Link href={`/characters/${c.id}`} className="character-card"><Portrait avatar={c.avatar} name={c.name}/><span className="card-badge">{c.world_id?text('Scenario character','ตัวละครในซีนาริโอ'):text('Standalone','ตัวละครเดี่ยว')}</span><div className="character-caption"><div><h3>{c.name}</h3><div className="tags">{c.tags.slice(0,2).map(t=><span key={t}>{t}</span>)}</div></div><span className="round-arrow"><ArrowRight size={17}/></span></div></Link>;}
-export function WorldCard({world:w}:{world:World}){const {text}=useLanguage();return <Link href={`/worlds/${w.id}`} className={`world-card world-${w.cover}`}><span className="card-badge">{w.owner_id?text('Your scenario','ซีนาริโอของคุณ'):text('Original scenario','ซีนาริโอต้นฉบับ')}</span><div><small>{w.genre}</small><h3>{w.name}</h3><p>{w.description}</p></div><span className="round-arrow"><ArrowRight size={17}/></span></Link>;}
-export function Empty({title,children,href,label}:{title:string;children:ReactNode;href?:string;label?:string}){return <div className="empty"><Sparkles size={26}/><h3>{title}</h3><p>{children}</p>{href&&<Link className="button" href={href}><Plus size={16}/>{label}</Link>}</div>;}
-export function ErrorNote({message}:{message:string}){return message?<p className="error-note" role="alert">{message}</p>:null;}
-export function PageTitle({eyebrow,title,description,children}:{eyebrow?:string;title:string;description?:string;children?:ReactNode}){return <div className="page-title"><div>{eyebrow&&<span className="eyebrow">{eyebrow}</span>}<h1>{title}</h1>{description&&<p>{description}</p>}</div>{children}</div>;}
+"use client";
+import Link from "next/link";
+import { ArrowRight, ChevronRight, Plus, Sparkles } from "lucide-react";
+import type { Character, World } from "@/lib/types";
+import type { CSSProperties, ReactNode } from "react";
+import { useLanguage } from "./i18n";
+export function displayTag(tag: string, thai: boolean) {
+  if (!thai) return tag;
+  return (
+    (
+      {
+        Yuri: "ยูริ",
+        "Yaoi / BL": "วาย / BL",
+        GL: "GL / หญิงรักหญิง",
+        Romance: "โรแมนซ์",
+        "Slow Burn": "ค่อย ๆ รัก",
+        "Enemies to Lovers": "คู่กัดกลายเป็นคู่รัก",
+        "Friends to Lovers": "เพื่อนเลื่อนเป็นแฟน",
+        Tsundere: "ซึนเดเระ",
+        Yandere: "ยันเดเระ",
+        Kuudere: "คูเดเระ",
+        Dandere: "ดันเดเระ",
+        Himedere: "ฮิเมะเดเระ",
+        Oujidere: "โอจิเดเระ",
+        Genki: "สายพลังบวก",
+        Fluffy: "ฟีลกู๊ด",
+        Angst: "หน่วง ๆ",
+        Drama: "ดราม่า",
+        Comedy: "คอมเมดี้",
+        "Slice of Life": "ชีวิตประจำวัน",
+        Fantasy: "แฟนตาซี",
+        Mystery: "ลึกลับ",
+        "School Life": "วัยเรียน",
+        Kind: "ใจดี",
+        Curious: "ช่างสงสัย",
+        Wise: "สุขุม",
+        Gentle: "อ่อนโยน",
+        Bold: "กล้าลุย",
+        Playful: "ขี้เล่น",
+        Warm: "อบอุ่น",
+        Devoted: "ทุ่มเท",
+        Calm: "ใจเย็น",
+        Loyal: "ซื่อสัตย์",
+      } as Record<string, string>
+    )[tag] ?? tag
+  );
+}
+export async function api<T>(
+  path: string,
+  method = "GET",
+  data?: unknown,
+): Promise<T> {
+  const r = await fetch(`/api/${path}`, {
+    method,
+    headers: data ? { "Content-Type": "application/json" } : undefined,
+    body: data ? JSON.stringify(data) : undefined,
+    cache: "no-store",
+  });
+  let result;
+  try {
+    result = await r.json();
+  } catch {
+    throw new Error("The server is unavailable. Please try again.");
+  }
+  if (!r.ok) throw new Error(result.error || "Unable to complete this action.");
+  return result;
+}
+export function Portrait({
+  avatar = "0",
+  className = "",
+  name = "",
+}: {
+  avatar?: string;
+  className?: string;
+  name?: string;
+}) {
+  const remote = avatar.startsWith("https://") || avatar.startsWith("http://");
+  const custom = avatar.startsWith("data:") || remote;
+  const style: CSSProperties = custom
+    ? {
+        backgroundImage: `url("${avatar}")`,
+        backgroundSize: "cover",
+        backgroundPosition: "center 35%",
+      }
+    : { backgroundPosition: `${Number(avatar) * 25}% 35%` };
+  return (
+    <span
+      role={name ? "img" : undefined}
+      aria-label={name || undefined}
+      aria-hidden={!name}
+      className={`portrait ${custom ? "portrait-custom" : ""} ${className}`}
+      style={style}
+    />
+  );
+}
+export function SectionTitle({
+  children,
+  href,
+  label,
+}: {
+  children: ReactNode;
+  href?: string;
+  label?: string;
+}) {
+  const { text } = useLanguage();
+  return (
+    <div className="section-title">
+      <h2>{children}</h2>
+      {href && (
+        <Link href={href}>
+          {label ?? text("View all", "ดูทั้งหมด")}
+          <ChevronRight size={16} />
+        </Link>
+      )}
+    </div>
+  );
+}
+export function CharacterCard({ character: c }: { character: Character }) {
+  const { text, language } = useLanguage();
+  return (
+    <Link href={`/characters/${c.id}`} className="character-card">
+      <Portrait avatar={c.avatar} name={c.name} />
+      <span className="card-badge">
+        {c.world_id
+          ? text("Scenario character", "ตัวละครในซีนาริโอ")
+          : text("Standalone", "ตัวละครเดี่ยว")}
+      </span>
+      <div className="character-caption">
+        <div>
+          <h3>{c.name}</h3>
+          <div className="tags">
+            {c.tags.slice(0, 2).map((t) => (
+              <span key={t}>{displayTag(t, language === "th")}</span>
+            ))}
+          </div>
+        </div>
+        <span className="round-arrow">
+          <ArrowRight size={17} />
+        </span>
+      </div>
+    </Link>
+  );
+}
+export function WorldCard({ world: w }: { world: World }) {
+  const { text, language } = useLanguage();
+  return (
+    <Link href={`/worlds/${w.id}`} className={`world-card world-${w.cover}`}>
+      <span className="card-badge">
+        {w.owner_id
+          ? text("Your scenario", "ซีนาริโอของคุณ")
+          : text("Original scenario", "ซีนาริโอต้นฉบับ")}
+      </span>
+      <div>
+        <small>{displayTag(w.genre, language === "th")}</small>
+        <h3>{w.name}</h3>
+        <p>{w.description}</p>
+      </div>
+      <span className="round-arrow">
+        <ArrowRight size={17} />
+      </span>
+    </Link>
+  );
+}
+export function Empty({
+  title,
+  children,
+  href,
+  label,
+}: {
+  title: string;
+  children: ReactNode;
+  href?: string;
+  label?: string;
+}) {
+  return (
+    <div className="empty">
+      <Sparkles size={26} />
+      <h3>{title}</h3>
+      <p>{children}</p>
+      {href && (
+        <Link className="button" href={href}>
+          <Plus size={16} />
+          {label}
+        </Link>
+      )}
+    </div>
+  );
+}
+export function ErrorNote({ message }: { message: string }) {
+  return message ? (
+    <p className="error-note" role="alert">
+      {message}
+    </p>
+  ) : null;
+}
+export function PageTitle({
+  eyebrow,
+  title,
+  description,
+  children,
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="page-title">
+      <div>
+        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
+        <h1>{title}</h1>
+        {description && <p>{description}</p>}
+      </div>
+      {children}
+    </div>
+  );
+}
