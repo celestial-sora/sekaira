@@ -854,6 +854,31 @@ function Home({ data }: { data: Bootstrap }) {
     "Mystery",
     "School Life",
   ];
+  const categoryLabel = (value: string) =>
+    ({
+      Yuri: "ยูริ",
+      "Yaoi / BL": "วาย / BL",
+      GL: "GL / หญิงรักหญิง",
+      Romance: "โรแมนซ์",
+      "Slow Burn": "ค่อย ๆ รัก",
+      "Enemies to Lovers": "คู่กัดกลายเป็นคู่รัก",
+      "Friends to Lovers": "เพื่อนเลื่อนเป็นแฟน",
+      Tsundere: "ซึนเดเระ",
+      Yandere: "ยันเดเระ",
+      Kuudere: "คูเดเระ",
+      Dandere: "ดันเดเระ",
+      Himedere: "ฮิเมะเดเระ",
+      Oujidere: "โอจิเดเระ",
+      Genki: "สายพลังบวก",
+      Fluffy: "ฟีลกู๊ด",
+      Angst: "หน่วง ๆ",
+      Drama: "ดราม่า",
+      Comedy: "คอมเมดี้",
+      "Slice of Life": "ชีวิตประจำวัน",
+      Fantasy: "แฟนตาซี",
+      Mystery: "ลึกลับ",
+      "School Life": "วัยเรียน",
+    })[value] ?? value;
   const recommendedCharacters = [...data.characters]
     .filter(
       (character) =>
@@ -890,7 +915,7 @@ function Home({ data }: { data: Bootstrap }) {
               aria-pressed={selected}
               onClick={() => setCategory(item)}
             >
-              {item === "All" ? t("All", "ทั้งหมด") : item}
+              {item === "All" ? t("All", "ทั้งหมด") : categoryLabel(item)}
             </button>
           );
         })}
