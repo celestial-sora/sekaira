@@ -29,7 +29,7 @@ export function postgresSQL(sql:string){
  let out=sql.replace(/\bIS \?/g,'IS NOT DISTINCT FROM ?').replace(/MAX\(-100,MIN\(100,(?:relationships\.)?trust\+excluded\.trust\)\)/,'GREATEST((-100)::bigint,LEAST((100)::bigint,relationships.trust+excluded.trust))');
  if(out.startsWith('INSERT OR IGNORE'))out=out.replace('INSERT OR IGNORE','INSERT')+' ON CONFLICT DO NOTHING';
  const tables=['users','sessions','worlds','scenarios','avatars','characters','world_characters','personas','conversations','scenes','scene_characters','messages','memories','relationships','turn_locks'];
- out=out.replace(/\b(FROM|JOIN|INTO|UPDATE)\s+(\w+)/g,(m,op,table)=>tables.includes(table)?`${op} sekaira.${table}`:m);
+ out=out.replace(/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+(\w+)/g,(m,op,table)=>tables.includes(table)?`${op} sekaira.${table}`:m);
  let quote=false,index=0,result='';for(let i=0;i<out.length;i++){const c=out[i];if(c==="'"){if(quote&&out[i+1]==="'"){result+="''";i++;continue;}quote=!quote;}result+=c==='?'&&!quote?`$${++index}`:c;}return result;
 }
 async function query(sql:string,args:Value[]){if(hasPostgres()){const result=await (connection.getStore()||postgres()).query(postgresSQL(sql),args);return {rows:result.rows as Row[],changes:result.rowCount||0};}if(process.env.VERCEL)throw new Error('A PostgreSQL connection is not configured on Vercel.');const stmt=sqlite().prepare(sql);if(/^\s*(SELECT|WITH)/i.test(sql))return {rows:stmt.all(...args) as Row[],changes:0};const result=stmt.run(...args);return {rows:[] as Row[],changes:Number(result.changes)};}
