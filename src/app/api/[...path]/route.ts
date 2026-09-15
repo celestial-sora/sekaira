@@ -126,6 +126,13 @@ async function handle(req: NextRequest, ctx: Context) {
       fail("Request origin not allowed.", 403);
   }
   const user = await currentUser();
+  if (path[0] === "account" && path[1] === "age" && method === "POST") {
+    if (!user) fail("Sign in is required.", 401);
+    const input = z.object({ age: z.number().int().min(1).max(120) }).parse(await body(req));
+    const range = input.age >= 18 ? "mature" : "general";
+    await db().prepare("UPDATE users SET age_range=?,age_verified=1 WHERE id=?").run(range, user.id);
+    return json({ ok: true, age_range: range, age_verified: true });
+  }
   if (path[0] === "users" && path[1] && method === "GET") {
     const profile = await db().prepare("SELECT id,name,picture FROM users WHERE id=?").get(path[1]);
     if (!profile) fail("User not found.", 404);
@@ -270,7 +277,7 @@ async function handle(req: NextRequest, ctx: Context) {
         else
           await db()
             .prepare(
-              "INSERT INTO users (id,google_sub,email,name,picture,guest,admin) VALUES (?,?,?,?,?,0,?)",
+              "INSERT INTO users (id,google_sub,email,name,picture,guest,admin,age_range,age_verified) VALUES (?,?,?,?,?,0,?,'general',0)",
             )
             .run(
               uid,
