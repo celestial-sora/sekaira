@@ -72,7 +72,8 @@ export default function App() {
     [search, setSearch] = useState(""),
     [lang, setLang] = useState<"en" | "th">("en"),
     [theme, setTheme] = useState<"light" | "dark">("light"),
-    [reducedEffects, setReducedEffects] = useState(false);
+    [reducedEffects, setReducedEffects] = useState(false),
+    [ageVerified, setAgeVerified] = useState<boolean | null>(null);
   const refresh = useCallback(async () => {
     const b = await api<Bootstrap>("bootstrap");
     setData(b);
@@ -93,6 +94,13 @@ export default function App() {
       active = false;
     };
   }, []);
+  useEffect(() => {
+    const saved = localStorage.getItem("oonchai-age-verified");
+    if (saved === "true") { setAgeVerified(true); return; }
+    const accepted = window.confirm(lang === "th" ? "คุณมีอายุ 18 ปีขึ้นไปหรือไม่? เนื้อหาบางส่วนอาจเหมาะสำหรับผู้ใหญ่" : "Are you 18 or older? Some content may be intended for adults.");
+    if (accepted) localStorage.setItem("oonchai-age-verified", "true");
+    setAgeVerified(accepted);
+  }, [lang]);
   useEffect(() => {
     setSearch("");
   }, [path]);
@@ -452,6 +460,12 @@ export default function App() {
                 </p>
               </div>
             </div>
+            {data.user && !data.user.guest && (
+              <div className="account-meta">
+                <div><span>{t("Email", "อีเมล")}</span><strong>{data.user.email || t("Not linked yet", "ยังไม่ได้เชื่อมอีเมล")}</strong></div>
+                <div><span>{t("Access", "สิทธิ์การใช้งาน")}</span><strong>{data.user.admin ? "Admin" : t("Member", "สมาชิก")}</strong></div>
+              </div>
+            )}
             {(!data.user || data.user.guest) && (
               <a className="button primary" href="/api/auth/google">
                 {t("Continue with Google", "ดำเนินการต่อด้วย Google")}
@@ -483,6 +497,8 @@ export default function App() {
         </div>
       </>
     );
+  else if (segments[0] === "profile" && segments[1])
+    content = <PublicProfile id={segments[1]} />;
   else if (path === "/settings")
     content = (
       <>
@@ -564,6 +580,7 @@ export default function App() {
         {t("Let’s find another story.", "ไปหาเรื่องราวอื่นกันเถอะ")}
       </Empty>
     );
+  if (ageVerified === false) content = <Empty title={t("Access restricted", "จำกัดการเข้าถึง")} href="/account" label={t("Go to account", "ไปที่บัญชี")}>{t("You must confirm that you are 18 or older to continue.", "ต้องยืนยันว่าคุณมีอายุ 18 ปีขึ้นไปจึงจะใช้งานต่อได้")}</Empty>;
   return (
     <LanguageProvider language={lang}>
       <>
@@ -831,6 +848,14 @@ function Navigation({
       )}
     </header>
   );
+}
+
+function PublicProfile({ id }: { id: string }) {
+  const { text: t } = useLanguage();
+  const [profile, setProfile] = useState<{user:{name:string;picture:string|null};characters:Character[];worlds:World[]} | null>(null);
+  useEffect(() => { api<typeof profile>(`users/${id}`).then(setProfile).catch(() => setProfile(null)); }, [id]);
+  if (!profile) return <div className="loading glass"><p>{t("Loading profile…", "กำลังโหลดโปรไฟล์…")}</p></div>;
+  return <><PageTitle title={profile.user.name} description={t("Community creator", "ผู้สร้างจากคอมมูนิตี้")} /><section className="glass panel public-profile"><Portrait avatar={profile.user.picture || "0"} /><div><h2>{profile.user.name}</h2><p>{t(`${profile.characters.length} characters · ${profile.worlds.length} scenarios`, `${profile.characters.length} ตัวละคร · ${profile.worlds.length} ซีนาริโอ`)}</p></div></section>{profile.characters.length > 0 && <><SectionTitle>{t("Characters", "ตัวละคร")}</SectionTitle><div className="character-grid">{profile.characters.map(c => <CharacterCard key={c.id} character={c} />)}</div></>}{profile.worlds.length > 0 && <><SectionTitle>{t("Scenarios", "ซีนาริโอ")}</SectionTitle><div className="world-grid">{profile.worlds.map(w => <WorldCard key={w.id} world={w} />)}</div></>}</>;
 }
 
 function Home({ data }: { data: Bootstrap }) {
