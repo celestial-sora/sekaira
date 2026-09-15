@@ -98,10 +98,17 @@ export default function App() {
     };
   }, []);
   useEffect(() => {
-    if (!data?.user) return;
-    setAgeRange(data.user.age_range || null);
-    setAgeVerified(data.user.age_verified !== false);
-  }, [data?.user]);
+    if (!data) return;
+    if (data.user) {
+      setAgeRange(data.user.age_range || null);
+      setAgeVerified(data.user.age_verified !== false);
+      return;
+    }
+    const verified = localStorage.getItem("oonchai-age-verified") === "true";
+    const savedRange = localStorage.getItem("oonchai-age-range");
+    setAgeRange(savedRange === "general" || savedRange === "mature" ? savedRange : null);
+    setAgeVerified(verified);
+  }, [data]);
   useEffect(() => {
     setSearch("");
   }, [path]);
@@ -585,7 +592,7 @@ export default function App() {
   return (
     <LanguageProvider language={lang}>
       <>
-        {ageVerified === false && <div className="age-gate" role="dialog" aria-modal="true" aria-labelledby="age-gate-title"><div className="age-gate-card"><span className="eyebrow">OONCHAI</span><h2 id="age-gate-title">{t("Enter your age", "กรอกอายุของคุณ")}</h2><p>{t("We’ll show the experience that fits your age range.", "เราจะปรับประสบการณ์ให้เหมาะกับช่วงอายุของคุณ")}</p><label className="age-field"><span>{t("ENTER YOUR AGE", "กรอกอายุ")}</span><input autoFocus type="number" inputMode="numeric" min="1" max="120" value={ageInput} onChange={(e) => { setAgeInput(e.target.value); setAgeError(""); }} placeholder="18" /></label>{ageError && <p className="age-error">{ageError}</p>}<button className="button primary age-submit" type="button" onClick={async () => { const age = Number(ageInput); if (!ageInput || !Number.isFinite(age) || age < 1 || age > 120) { setAgeError(t("Enter a valid age.", "กรุณากรอกอายุให้ถูกต้อง")); return; } try { const result = await api<{age_range:"general"|"mature"}>("account/age", "POST", { age }); setAgeRange(result.age_range); setAgeVerified(true); setData((current) => current ? ({ ...current, user: current.user ? { ...current.user, age_range: result.age_range, age_verified: true } : current.user }) : current); } catch (e) { setAgeError((e as Error).message); } }}>{t("Continue", "เข้าใช้งาน")}</button></div></div>}
+        {ageVerified === false && <div className="age-gate" role="dialog" aria-modal="true" aria-labelledby="age-gate-title"><div className="age-gate-card"><span className="eyebrow">OONCHAI</span><h2 id="age-gate-title">{t("Enter your age", "กรอกอายุของคุณ")}</h2><p>{t("We’ll show the experience that fits your age range.", "เราจะปรับประสบการณ์ให้เหมาะกับช่วงอายุของคุณ")}</p><label className="age-field"><span>{t("ENTER YOUR AGE", "กรอกอายุ")}</span><input autoFocus type="number" inputMode="numeric" min="1" max="120" value={ageInput} onChange={(e) => { setAgeInput(e.target.value); setAgeError(""); }} placeholder="18" /></label>{ageError && <p className="age-error">{ageError}</p>}<button className="button primary age-submit" type="button" onClick={async () => { const age = Number(ageInput); if (!ageInput || !Number.isFinite(age) || age < 1 || age > 120) { setAgeError(t("Enter a valid age.", "กรุณากรอกอายุให้ถูกต้อง")); return; } try { const result = data?.user ? await api<{age_range:"general"|"mature"}>("account/age", "POST", { age }) : { age_range: age >= 18 ? "mature" as const : "general" as const }; localStorage.setItem("oonchai-age-verified", "true"); localStorage.setItem("oonchai-age-range", result.age_range); setAgeRange(result.age_range); setAgeVerified(true); setData((current) => current ? ({ ...current, user: current.user ? { ...current.user, age_range: result.age_range, age_verified: true } : current.user }) : current); } catch (e) { setAgeError((e as Error).message); } }}>{t("Continue", "เข้าใช้งาน")}</button></div></div>}
         <a className="skip-link" href="#main-content">
           {t("Skip to content", "ข้ามไปยังเนื้อหา")}
         </a>
