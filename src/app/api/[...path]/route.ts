@@ -34,6 +34,7 @@ import {
   matchesOAuthState,
   googleProfileSchema,
   applicationUrl,
+  isAdmin,
 } from "@/lib/auth";
 import {
   characterSchema,
@@ -125,6 +126,13 @@ async function handle(req: NextRequest, ctx: Context) {
       fail("Request origin not allowed.", 403);
   }
   const user = await currentUser();
+  if (path[0] === "admin") {
+    if (!user || !isAdmin(user)) fail("Admin access required.", 403);
+    if (method === "GET" && path[1] === "users") {
+      const users = await db().prepare("SELECT id,email,name,picture,guest,admin FROM users ORDER BY name").all();
+      return json({ users });
+    }
+  }
   if (path[0] === "bootstrap" && method === "GET")
     return json({
       user,
@@ -230,6 +238,7 @@ async function handle(req: NextRequest, ctx: Context) {
       if (!parsedProfile.success)
         fail("A verified Google account is required.", 401);
       const profile = parsedProfile.data;
+      const profileEmail = typeof profile.email === "string" ? profile.email : null;
       const existing = await db()
         .prepare("SELECT id FROM users WHERE google_sub=?")
         .get(profile.sub);
@@ -239,24 +248,28 @@ async function handle(req: NextRequest, ctx: Context) {
         if (user?.guest)
           await db()
             .prepare(
-              "UPDATE users SET google_sub=?,name=?,picture=?,guest=0 WHERE id=?",
+              "UPDATE users SET google_sub=?,email=?,name=?,picture=?,guest=0,admin=? WHERE id=?",
             )
             .run(
               profile.sub,
+              profileEmail,
               profile.name || "Traveler",
               profile.picture || null,
+              (process.env.ADMIN_EMAILS || "suphloeksangko@gmail.com").toLowerCase().split(",").includes((profileEmail || "").toLowerCase()) ? 1 : 0,
               uid,
             );
         else
           await db()
             .prepare(
-              "INSERT INTO users (id,google_sub,name,picture,guest) VALUES (?,?,?,?,0)",
+              "INSERT INTO users (id,google_sub,email,name,picture,guest,admin) VALUES (?,?,?,?,?,0,?)",
             )
             .run(
               uid,
               profile.sub,
+              profileEmail,
               profile.name || "Traveler",
               profile.picture || null,
+              (process.env.ADMIN_EMAILS || "suphloeksangko@gmail.com").toLowerCase().split(",").includes((profileEmail || "").toLowerCase()) ? 1 : 0,
             );
       }
       await session(uid, c.get("sora_session")?.value);
