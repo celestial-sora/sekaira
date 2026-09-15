@@ -73,7 +73,9 @@ export default function App() {
     [lang, setLang] = useState<"en" | "th">("en"),
     [theme, setTheme] = useState<"light" | "dark">("light"),
     [reducedEffects, setReducedEffects] = useState(false),
-    [ageVerified, setAgeVerified] = useState<boolean | null>(null);
+    [ageVerified, setAgeVerified] = useState<boolean | null>(null),
+    [ageInput, setAgeInput] = useState(""),
+    [ageError, setAgeError] = useState("");
   const refresh = useCallback(async () => {
     const b = await api<Bootstrap>("bootstrap");
     setData(b);
@@ -96,11 +98,8 @@ export default function App() {
   }, []);
   useEffect(() => {
     const saved = localStorage.getItem("oonchai-age-verified");
-    if (saved === "true") { setAgeVerified(true); return; }
-    const accepted = window.confirm(lang === "th" ? "คุณมีอายุ 18 ปีขึ้นไปหรือไม่? เนื้อหาบางส่วนอาจเหมาะสำหรับผู้ใหญ่" : "Are you 18 or older? Some content may be intended for adults.");
-    if (accepted) localStorage.setItem("oonchai-age-verified", "true");
-    setAgeVerified(accepted);
-  }, [lang]);
+    setAgeVerified(saved === "true");
+  }, []);
   useEffect(() => {
     setSearch("");
   }, [path]);
@@ -584,6 +583,7 @@ export default function App() {
   return (
     <LanguageProvider language={lang}>
       <>
+        {ageVerified === null ? null : !ageVerified && <div className="age-gate" role="dialog" aria-modal="true" aria-labelledby="age-gate-title"><div className="age-gate-card"><span className="eyebrow">OONCHAI</span><h2 id="age-gate-title">{t("Enter your age", "กรอกอายุของคุณ")}</h2><p>{t("You must be 18 or older to enter.", "คุณต้องมีอายุ 18 ปีขึ้นไปจึงจะเข้าใช้งานได้")}</p><label className="age-field"><span>{t("ENTER YOUR AGE", "กรอกอายุ")}</span><input autoFocus type="number" inputMode="numeric" min="1" max="120" value={ageInput} onChange={(e) => { setAgeInput(e.target.value); setAgeError(""); }} placeholder="18" /></label>{ageError && <p className="age-error">{ageError}</p>}<button className="button primary age-submit" type="button" onClick={() => { const age = Number(ageInput); if (!ageInput || !Number.isFinite(age) || age < 18) { setAgeError(t("You must be 18 or older to continue.", "ต้องมีอายุ 18 ปีขึ้นไปจึงจะใช้งานต่อได้")); return; } localStorage.setItem("oonchai-age-verified", "true"); setAgeVerified(true); }}>{t("Continue", "เข้าใช้งาน")}</button></div></div>}
         <a className="skip-link" href="#main-content">
           {t("Skip to content", "ข้ามไปยังเนื้อหา")}
         </a>
