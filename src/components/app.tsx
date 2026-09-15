@@ -57,6 +57,13 @@ async function initialize() {
   }
   return b;
 }
+function AdminPanel() {
+  const { text } = useLanguage();
+  const [users, setUsers] = useState<Array<{id:string;email?:string;name:string;admin?:boolean}>>([]);
+  const load = useCallback(async () => { const r = await api<{users: typeof users}>("admin/users"); setUsers(r.users); }, []);
+  useEffect(() => { load().catch(() => setUsers([])); }, [load]);
+  return <section className="glass panel"><PageTitle title={text("Admin", "แอดมิน")} description={text("Manage users and community data.", "จัดการผู้ใช้และข้อมูลคอมมูนิตี้")}/><div className="admin-users">{users.map(u => <div className="admin-user" key={u.id}><div><strong>{u.name}</strong><small>{u.email || text("No email", "ไม่มีอีเมล")}</small></div><span>{u.admin ? "Admin" : "User"}</span><button className="button danger" disabled={u.admin} onClick={async()=>{if(confirm(text("Delete this user and all data?", "ลบผู้ใช้นี้และข้อมูลทั้งหมดหรือไม่?"))){await api(`admin/users/${u.id}`, "DELETE"); await load();}}}>{text("Delete", "ลบ")}</button></div>)}</div></section>;
+}
 export default function App() {
   const path = usePathname(),
     router = useRouter();
@@ -197,6 +204,7 @@ export default function App() {
       </>
     );
   else if (path === "/") content = <Home data={data} />;
+  else if (path === "/admin" && data.user?.admin) content = <AdminPanel />;
   else if (path === "/characters/new")
     content = <CharacterForm data={data} refresh={refresh} />;
   else if (path === "/worlds/new") content = <WorldForm refresh={refresh} />;
@@ -656,7 +664,8 @@ function Navigation({
     ["/library", "Library", "คลังเรื่องราว", Library],
     ["/account", "Account", "บัญชี", UserRound],
     ["/settings", "Settings", "ตั้งค่า", Settings],
-  ] as const;
+  ] as Array<readonly [string,string,string,typeof Plus]>;
+  if (user?.admin) secondary.push(["/admin", "Admin", "แอดมิน", Settings]);
   useEffect(() => {
     if (panel === "search") searchInput.current?.focus();
   }, [panel]);
