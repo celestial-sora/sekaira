@@ -54,7 +54,7 @@ export async function list<T>(
   return (
     await db()
       .prepare(
-        `SELECT data, owner_id, users.name AS creator_name, users.picture AS creator_picture FROM ${tables[table]} LEFT JOIN users ON users.id = ${tables[table]}.owner_id WHERE ${tables[table]}.owner_id IS NULL OR ${tables[table]}.owner_id = ? ORDER BY ${tables[table]}.id DESC`,
+        `SELECT data, owner_id, users.name AS creator_name, users.picture AS creator_picture FROM ${tables[table]} LEFT JOIN users ON users.id = ${tables[table]}.owner_id WHERE ${tables[table]}.owner_id IS NULL OR ${tables[table]}.owner_id = ? OR json_extract(${tables[table]}.data, '$.published') = 1 ORDER BY ${tables[table]}.id DESC`,
       )
       .all(userId)
   ).map((r) => ({ ...JSON.parse(r.data as string), creator_name: r.creator_name ?? null, creator_picture: r.creator_picture ?? null }));
@@ -66,7 +66,7 @@ export async function get<T>(
 ): Promise<T | null> {
   const r = await db()
     .prepare(
-      `SELECT data FROM ${tables[table]} WHERE id = ? AND (owner_id IS NULL OR owner_id = ?)`,
+      `SELECT data FROM ${tables[table]} WHERE id = ? AND (owner_id IS NULL OR owner_id = ? OR json_extract(data, '$.published') = 1)`,
     )
     .get(entityId, userId);
   return r ? JSON.parse(r.data as string) : null;
@@ -75,7 +75,7 @@ export async function createCharacter(
   owner: string,
   data: Omit<Character, "id" | "owner_id" | "created_at">,
 ): Promise<Character> {
-  const c = { ...data, id: id(), owner_id: owner, created_at: now() };
+  const c = { ...data, published: false, id: id(), owner_id: owner, created_at: now() };
   await db()
     .prepare(
       "INSERT INTO characters (id,owner_id,world_id,scenario_id,avatar_id,data) VALUES (?,?,?,?,?,?)",
@@ -113,7 +113,7 @@ export async function createWorld(
   owner: string,
   data: Omit<World, "id" | "owner_id" | "created_at">,
 ): Promise<World> {
-  const w = { ...data, id: id(), owner_id: owner, created_at: now() };
+  const w = { ...data, published: false, id: id(), owner_id: owner, created_at: now() };
   await db()
     .prepare("INSERT INTO worlds (id,owner_id,data) VALUES (?,?,?)")
     .run(w.id, owner, JSON.stringify(w));
@@ -138,7 +138,7 @@ export async function worldCharacters(
   return (
     await db()
       .prepare(
-        "SELECT c.data FROM characters c JOIN world_characters wc ON wc.character_id=c.id WHERE wc.world_id=? AND (c.owner_id IS NULL OR c.owner_id=?)",
+        "SELECT c.data FROM characters c JOIN world_characters wc ON wc.character_id=c.id WHERE wc.world_id=? AND (c.owner_id IS NULL OR c.owner_id=? OR json_extract(c.data, '$.published') = 1)",
       )
       .all(worldId, owner)
   ).map((r) => JSON.parse(r.data as string));
