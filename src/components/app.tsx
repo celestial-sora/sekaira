@@ -1,88 +1,1236 @@
-'use client';
-import {useCallback,useEffect,useRef,useState} from 'react';
-import Link from 'next/link';
-import navStyles from './navigation.module.css';
-import {usePathname,useRouter} from 'next/navigation';
-import {House,MessageCircle,Globe2,UsersRound,UserRound,Library,Settings,Search,Plus,ArrowRight,ChevronDown,Sparkles,Menu,X,Feather,Check,LogOut,Moon,Sun} from 'lucide-react';
-import type {Bootstrap,Character,World,Conversation} from '@/lib/types';
-import {api,Portrait,SectionTitle,CharacterCard,WorldCard,Empty,PageTitle,ErrorNote} from './shared';
-import {WorldForm,PersonaForm} from './forms';
-import {CharacterForm} from './character-form';
-import {CharacterDetail,WorldDetail,Chat} from './experiences';
-import {LanguageProvider,useLanguage} from './i18n';
-const navigation=[['/','Discover',House],['/chat','Chat',MessageCircle],['/characters','Characters',UsersRound],['/worlds','Scenarios',Globe2],['/personas','My Personas',UserRound],['/library','Library',Library],['/account','Account',UserRound]] as const;
-let startup:Promise<Bootstrap>|null=null;
-async function initialize(){let b=await api<Bootstrap>('bootstrap');if(!b.user&&b.guestAllowed){await api('auth/guest','POST',{});b=await api<Bootstrap>('bootstrap');}return b;}
-export default function App(){
- const path=usePathname(),router=useRouter();const [data,setData]=useState<Bootstrap|null>(null),[error,setError]=useState(''),[search,setSearch]=useState(''),[lang,setLang]=useState<'en'|'th'>('en'),[theme,setTheme]=useState<'light'|'dark'>('light'),[reducedEffects,setReducedEffects]=useState(false);
- const refresh=useCallback(async()=>{const b=await api<Bootstrap>('bootstrap');setData(b);return b;},[]);
- useEffect(()=>{let active=true;startup??=initialize();startup.then(b=>{if(active)setData(b);}).catch(e=>{startup=null;if(active)setError(e.message);});return()=>{active=false;};},[]);
- useEffect(()=>{setSearch('');},[path]);
- useEffect(()=>{setReducedEffects(localStorage.getItem('sora-reduce-effects')==='true');const saved=localStorage.getItem('oonchai-language');if(saved==='th'||saved==='en')setLang(saved);const savedTheme=localStorage.getItem('oonchai-theme');if(savedTheme==='light'||savedTheme==='dark')setTheme(savedTheme);},[]);
- useEffect(()=>{document.documentElement.lang=lang;},[lang]);
-useEffect(()=>{document.documentElement.dataset.theme=theme;localStorage.setItem('oonchai-theme',theme);},[theme]);
-useEffect(()=>{document.documentElement.classList.toggle('reduce-effects',reducedEffects);localStorage.setItem('sora-reduce-effects',String(reducedEffects));},[reducedEffects]);
- const t=(english:string,thai:string)=>lang==='th'?thai:english;
- const chars=data?.characters||[],worlds=data?.worlds||[];
- const filteredChars=chars.filter(c=>`${c.name} ${c.description} ${c.tags.join(' ')}`.toLowerCase().includes(search.toLowerCase()));
- const filteredWorlds=worlds.filter(w=>`${w.name} ${w.description} ${w.genre}`.toLowerCase().includes(search.toLowerCase()));
- async function chatNow(c:Character){setError('');try{if(!data?.user){router.push('/account');return;}const conv=await api<Conversation>('conversations','POST',{character_ids:[c.id],world_id:null,scenario_id:null,persona_id:null});await refresh();router.push(`/chat/${conv.id}`);}catch(e){setError((e as Error).message);}}
- const segments=path.split('/').filter(Boolean);
- let content;
- if(!data)content=<div className="loading glass" role="status" aria-live="polite"><Sparkles className="loading-mark"/><h1>{t('Opening Oonchai…','กำลังเปิด Oonchai…')}</h1><p>{t('Bringing your characters and scenarios together.','กำลังพาตัวละครและซีนาริโอของคุณมาพบกัน')}</p>{error&&<><ErrorNote message={error}/><button className="button" onClick={()=>location.reload()}>{t('Try again','ลองอีกครั้ง')}</button></>}</div>;
- else if(search)content=<><PageTitle title={t(`Searching for “${search}”`,`กำลังค้นหา “${search}”`)} description={t(`${filteredChars.length} characters · ${filteredWorlds.length} scenarios`,`${filteredChars.length} ตัวละคร · ${filteredWorlds.length} ซีนาริโอ`)}/><SectionTitle>{t('Characters','ตัวละคร')}</SectionTitle><div className="character-grid">{filteredChars.map(c=><CharacterCard key={c.id} character={c}/>)}</div><SectionTitle>{t('Scenarios','ซีนาริโอ')}</SectionTitle><div className="world-grid">{filteredWorlds.map(w=><WorldCard key={w.id} world={w}/>)}</div>{!filteredChars.length&&!filteredWorlds.length&&<Empty title={t('A story yet to be told','เรื่องราวที่ยังไม่ได้เริ่ม')}>{t('Try another name, genre, or personality.','ลองค้นหาด้วยชื่อ แนวเรื่อง หรือนิสัยอื่น')}</Empty>}</>;
- else if(path==='/')content=<Home data={data}/>;
- else if(path==='/characters/new')content=<CharacterForm data={data} refresh={refresh}/>;
- else if(path==='/worlds/new')content=<WorldForm refresh={refresh}/>;
- else if(path==='/personas/new')content=<PersonaForm data={data} refresh={refresh}/>;
- else if(segments[0]==='characters'&&segments[1])content=<CharacterDetail character={chars.find(c=>c.id===segments[1])} onChat={chatNow}/>;
- else if(segments[0]==='worlds'&&segments[1])content=<WorldDetail key={segments[1]} id={segments[1]} data={data} refresh={refresh}/>;
- else if(segments[0]==='chat'&&segments[1])content=<Chat key={segments[1]} id={segments[1]} data={data} refresh={refresh}/>;
- else if(path==='/characters'||path==='/worlds')content=<Discovery type={path==='/characters'?'characters':'worlds'} data={data}/>;
- else if(path==='/create')content=<><PageTitle eyebrow={t('YOUR IMAGINATION, YOUR RULES','จินตนาการของคุณ กฎของคุณ')} title={t('Choose where your story begins','เลือกจุดเริ่มต้นของเรื่องราว')} description={t('Create someone to talk with, or build a scenario to step into.','สร้างใครสักคนเพื่อพูดคุย หรือสร้างซีนาริโอเพื่อก้าวเข้าไป')}/><div className="create-primary"><Link href="/characters/new" className="glass create-option create-character"><span className="create-option-icon"><UsersRound/></span><span className="eyebrow">{t('START WITH A CONNECTION','เริ่มจากความสัมพันธ์')}</span><h2>{t('Create Character','สร้างตัวละคร')}</h2><p>{t('Give an original character a personality, voice, and history. Chat immediately without a scenario or persona.','มอบนิสัย น้ำเสียง และเรื่องราวให้ตัวละครของคุณ แล้วเริ่มแชตได้ทันทีโดยไม่ต้องมีซีนาริโอหรือ Persona')}</p><span className="button primary">{t('Create Character','สร้างตัวละคร')}<ArrowRight size={17}/></span></Link><Link href="/worlds/new" className="glass create-option create-world"><span className="create-option-icon"><Globe2/></span><span className="eyebrow">{t('START WITH A UNIVERSE','เริ่มจากจักรวาล')}</span><h2>{t('Create Scenario','สร้างซีนาริโอ')}</h2><p>{t('Shape lore, rules, places, and factions. Then bring in characters and enter with a persona.','กำหนดตำนาน กฎ สถานที่ และกลุ่มต่าง ๆ แล้วพาตัวละครเข้ามาพร้อม Persona ของคุณ')}</p><span className="button primary">{t('Create Scenario','สร้างซีนาริโอ')}<ArrowRight size={17}/></span></Link></div><Link href="/personas/new" className="glass create-persona"><span className="creation-icon"><UserRound size={22}/></span><div><span className="eyebrow">{t('OPTIONAL IDENTITY','ตัวตนเสริม')}</span><h2>{t('Create Persona','สร้าง Persona')}</h2><p>{t('Define who you become inside a scenario when you are ready.','กำหนดว่าคุณจะเป็นใครในซีนาริโอเมื่อพร้อม')}</p></div><span className="text-link">{t('Create Persona','สร้าง Persona')}<ArrowRight size={16}/></span></Link></>;
- else if(path==='/personas')content=<><PageTitle title={t('My Personas','Persona ของฉัน')} description={t('A different you, for every story.','ตัวตนที่แตกต่างในทุกเรื่องราว')}><Link className="button primary" href="/personas/new"><Plus size={17}/>{t('Create Persona','สร้าง Persona')}</Link></PageTitle><div className="persona-grid">{data.personas.map(p=><article className="glass persona-card" key={p.id}><UserRound size={32}/><h2>{p.name}</h2><span className="pill">{p.role||t('A new beginning','การเริ่มต้นครั้งใหม่')}</span><p>{p.backstory||p.description||t('Your story is yours to write.','เรื่องราวนี้เป็นของคุณ')}</p>{p.world_id&&<Link className="text-link" href={`/worlds/${p.world_id}`}>{t('Enter','เข้าสู่')} {worlds.find(w=>w.id===p.world_id)?.name}<ArrowRight size={16}/></Link>}</article>)}</div>{!data.personas.length&&<Empty title={t('Who will you become?','คุณจะเป็นใคร?')} href="/personas/new" label={t('Create Persona','สร้าง Persona')}>{t('A traveler, a mage, or someone entirely your own.','นักเดินทาง จอมเวท หรือใครสักคนที่เป็นคุณอย่างแท้จริง')}</Empty>}</>;
- else if(path==='/chat'||path==='/library')content=<><PageTitle title={path==='/chat'?t('Your conversations','บทสนทนาของคุณ'):t('Your library','คลังเรื่องราวของคุณ')} description={t('Every connection has a story. Pick up where you left off.','ทุกความสัมพันธ์มีเรื่องราว กลับมาต่อจากที่ค้างไว้')}/><Recent data={data} full/>{path==='/library'&&<><SectionTitle>{t('Your characters','ตัวละครของคุณ')}</SectionTitle><div className="character-grid">{chars.filter(c=>c.owner_id===data.user?.id).map(c=><CharacterCard key={c.id} character={c}/>)}</div><SectionTitle>{t('Your scenarios','ซีนาริโอของคุณ')}</SectionTitle><div className="world-grid">{worlds.filter(w=>w.owner_id===data.user?.id).map(w=><WorldCard key={w.id} world={w}/>)}</div></>}</>;
- else if(path==='/account')content=<><PageTitle title={t('Account','บัญชี')} description={t('Your identity and sign-in settings.','ตัวตนและการเข้าสู่ระบบของคุณ')}/><div className="settings-grid"><section className="glass panel"><h2>{t('Your account','บัญชีของคุณ')}</h2><div className="account-block"><Portrait avatar={data?.user?.picture||'4'}/><div><h3>{data.user?.name||t('Welcome, traveler','ยินดีต้อนรับ นักเดินทาง')}</h3><p>{data.user?.guest?t('Local guest · saved in this browser session','ผู้เยี่ยมชม · บันทึกในเซสชันเบราว์เซอร์นี้'):data.user?t('Signed in with Google','เข้าสู่ระบบด้วย Google แล้ว'):t('Sign in to save your characters and stories.','เข้าสู่ระบบเพื่อบันทึกตัวละครและเรื่องราว')}</p></div></div>{(!data.user||data.user.guest)&&<a className="button primary" href="/api/auth/google">{t('Continue with Google','ดำเนินการต่อด้วย Google')}<ArrowRight size={16}/></a>}{!data.googleReady&&<p className="muted">{t('Google sign-in is waiting for project credentials.','การเข้าสู่ระบบ Google กำลังรอข้อมูลรับรองของโปรเจกต์')}</p>}{data.user&&!data.user.guest&&<button className="button" onClick={async()=>{await api('auth/logout','POST',{});startup=null;location.href='/';}}><LogOut size={16}/>{t('Sign out','ออกจากระบบ')}</button>}</section></div></>;
- else if(path==='/settings')content=<><PageTitle title={t('Settings','ตั้งค่า')} description={t('AI connection and appearance.','การเชื่อมต่อ AI และรูปลักษณ์')}/><div className="settings-grid"><section className="glass panel"><h2>{t('AI connection','การเชื่อมต่อ AI')}</h2><div className="connection"><span className={`status-dot ${data.groqReady?'ready':''}`}/><strong>Groq</strong><span className="pill">{data.groqReady?t('Connected','เชื่อมต่อแล้ว'):t('Setup needed','ต้องตั้งค่า')}</span></div><p>{t('Model','โมเดล')}: {data.model}</p><p className="muted">{t('Your stories use character memory, relationship context, and the scenario’s shared history.','เรื่องราวใช้ความทรงจำของตัวละคร บริบทความสัมพันธ์ และประวัติร่วมของซีนาริโอ')}</p>{!data.groqReady&&<p className="notice">{t('Set GROQ_API_KEY in the server environment to enable replies.','ตั้งค่า GROQ_API_KEY ใน environment ของเซิร์ฟเวอร์เพื่อเปิดใช้งานการตอบกลับ')}</p>}</section><section className="glass panel"><h2>{t('Appearance','รูปลักษณ์')}</h2><p>{t('Make space for your story.','จัดพื้นที่ให้เหมาะกับเรื่องราวของคุณ')}</p><div className="settings-actions"><button className="button" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?t('Switch to light mode','เปลี่ยนเป็นโหมดสว่าง'):t('Switch to dark mode','เปลี่ยนเป็นโหมดมืด')}</button><button className="button" aria-pressed={reducedEffects} onClick={()=>setReducedEffects(value=>!value)}>{reducedEffects?t('Use full transparency','ใช้ความโปร่งใสเต็มรูปแบบ'):t('Reduce transparency','ลดความโปร่งใส')}</button></div></section></div></>;
- else content=<Empty title={t('This path is still unwritten','หน้านี้ยังไม่มีเรื่องราว')} href="/" label={t('Back to Discover','กลับไปหน้าค้นพบ')}>{t('Let’s find another story.','ไปหาเรื่องราวอื่นกันเถอะ')}</Empty>;
- return <LanguageProvider language={lang}><><a className="skip-link" href="#main-content">{t('Skip to content','ข้ามไปยังเนื้อหา')}</a><div className="ambient"/><div className="app-shell"><div className="workspace"><Navigation key={path} path={path} user={data?.user??null} lang={lang} theme={theme} search={search} setSearch={setSearch} onLanguage={()=>{const value=lang==='en'?'th':'en';setLang(value);localStorage.setItem('oonchai-language',value);}} onTheme={()=>setTheme(theme==='dark'?'light':'dark')}/><main id="main-content" key={path} className={`main-content ${segments[0]==='chat'&&segments[1]?'chat-page':''}`} tabIndex={-1}>{error&&data&&<ErrorNote message={error}/>}<div className="page-enter">{content}</div></main><footer className="app-footer"><span>{t('Oonchai · A place for your imagination','Oonchai · พื้นที่สำหรับจินตนาการของคุณ')}</span><span>{t('Meet a character. Build a scenario. Live your own story.','พบตัวละคร สร้างซีนาริโอ และใช้ชีวิตในเรื่องราวของคุณ')}</span></footer></div></div></></LanguageProvider>;
+"use client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import navStyles from "./navigation.module.css";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  House,
+  MessageCircle,
+  Globe2,
+  UsersRound,
+  UserRound,
+  Library,
+  Settings,
+  Search,
+  Plus,
+  ArrowRight,
+  ChevronDown,
+  Sparkles,
+  Menu,
+  X,
+  Feather,
+  Check,
+  LogOut,
+  Moon,
+  Sun,
+} from "lucide-react";
+import type { Bootstrap, Character, World, Conversation } from "@/lib/types";
+import {
+  api,
+  Portrait,
+  SectionTitle,
+  CharacterCard,
+  WorldCard,
+  Empty,
+  PageTitle,
+  ErrorNote,
+} from "./shared";
+import { WorldForm, PersonaForm } from "./forms";
+import { CharacterForm } from "./character-form";
+import { CharacterDetail, WorldDetail, Chat } from "./experiences";
+import { LanguageProvider, useLanguage } from "./i18n";
+const navigation = [
+  ["/", "Discover", House],
+  ["/chat", "Chat", MessageCircle],
+  ["/characters", "Characters", UsersRound],
+  ["/worlds", "Scenarios", Globe2],
+  ["/personas", "My Personas", UserRound],
+  ["/library", "Library", Library],
+  ["/account", "Account", UserRound],
+] as const;
+let startup: Promise<Bootstrap> | null = null;
+async function initialize() {
+  let b = await api<Bootstrap>("bootstrap");
+  if (!b.user && b.guestAllowed) {
+    await api("auth/guest", "POST", {});
+    b = await api<Bootstrap>("bootstrap");
+  }
+  return b;
 }
-type NavigationProps={path:string;user:Bootstrap['user'];lang:'en'|'th';theme:'light'|'dark';search:string;setSearch:(value:string)=>void;onLanguage:()=>void;onTheme:()=>void};
-function Navigation({path,user,lang,theme,search,setSearch,onLanguage,onTheme}:NavigationProps){
- const [panel,setPanel]=useState<'more'|'search'|null>(null);
- const header=useRef<HTMLElement>(null),moreButton=useRef<HTMLButtonElement>(null),searchButton=useRef<HTMLButtonElement>(null),searchInput=useRef<HTMLInputElement>(null);
- const t=(en:string,th:string)=>lang==='th'?th:en;
- // Never fall back to an email address, including a provider-supplied name containing one.
- const username=user?.name?.trim()&&!user.name.includes('@')?user.name.trim():user?t('Traveler','นักเดินทาง'):t('Sign in','เข้าสู่ระบบ');
- const active=(href:string)=>href==='/'?path==='/':path===href||path.startsWith(href+'/');
- const primary=[['/','Discover','ค้นพบ',House],['/chat','Chat','แชต',MessageCircle],['/characters','Characters','ตัวละคร',UsersRound],['/worlds','Scenarios','ซีนาริโอ',Globe2]] as const;
- const secondary=[['/create','Create','สร้าง',Plus],['/personas','My Personas','Persona ของฉัน',UserRound],['/library','Library','คลังเรื่องราว',Library],['/account','Account','บัญชี',UserRound],['/settings','Settings','ตั้งค่า',Settings]] as const;
- useEffect(()=>{if(panel==='search')searchInput.current?.focus();},[panel]);
- useEffect(()=>{
-  if(!panel)return;
-  const outside=(event:PointerEvent)=>{if(event.target instanceof Node&&!header.current?.contains(event.target))setPanel(null);};
-  document.addEventListener('pointerdown',outside);
-  return()=>document.removeEventListener('pointerdown',outside);
- },[panel]);
- return <header ref={header} className={navStyles.header} onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget as Node|null))setPanel(null);}} onKeyDown={event=>{if(event.key==='Escape'&&panel){event.preventDefault();const button=panel==='search'?searchButton:moreButton;setPanel(null);button.current?.focus();}}}>
-  <div className={navStyles.bar}>
-   <Link href="/" className={navStyles.logo} aria-label={t('Oonchai home','หน้าหลัก Oonchai')}><span aria-hidden="true"/></Link>
-   <nav className={navStyles.primary} aria-label={t('Primary navigation','เมนูหลัก')}>{primary.map(([href,en,th,Icon])=><Link key={href} href={href} aria-current={active(href)?'page':undefined}><Icon size={18} aria-hidden="true"/><span>{t(en,th)}</span></Link>)}</nav>
-   <div className={navStyles.actions}>
-    <button ref={searchButton} className={navStyles.icon} type="button" aria-label={t('Search','ค้นหา')} aria-expanded={panel==='search'} aria-controls="navigation-search" onClick={()=>setPanel(panel==='search'?null:'search')}><Search size={20}/>{search&&<span className={navStyles.searchDot}/>}</button>
-    <button ref={moreButton} className={navStyles.icon} type="button" aria-label={t('More navigation and settings','เมนูเพิ่มเติมและตั้งค่า')} aria-expanded={panel==='more'} aria-controls="navigation-more" onClick={()=>setPanel(panel==='more'?null:'more')}>{panel==='more'?<X size={20}/>:<Menu size={20}/>}</button>
-    <Link href="/account" className={navStyles.account} aria-label={t('Account: ','บัญชี: ')+username} title={username}><Portrait avatar={user?.picture||'4'}/><span className={navStyles.username}>{username}</span><ChevronDown size={14} aria-hidden="true"/></Link>
-   </div>
-  </div>
-  {panel==='search'&&<div id="navigation-search" className={navStyles.searchPanel}><Search size={20} aria-hidden="true"/><input ref={searchInput} value={search} onChange={event=>setSearch(event.target.value)} aria-label={t('Search characters and scenarios','ค้นหาตัวละครและซีนาริโอ')} placeholder={t('Search characters, scenarios…','ค้นหาตัวละคร ซีนาริโอ…')}/><button type="button" className={navStyles.icon} aria-label={t('Clear search','ล้างการค้นหา')} onClick={()=>{setSearch('');searchInput.current?.focus();}}><X size={18}/></button></div>}
-  {panel==='more'&&<div id="navigation-more" className={navStyles.morePanel}>
-   <div className={navStyles.identity}><strong>{username}</strong><span>{t('Your story, your space','พื้นที่เรื่องราวของคุณ')}</span></div>
-   <nav className={navStyles.secondary} aria-label={t('More navigation','เมนูเพิ่มเติม')}>{secondary.map(([href,en,th,Icon])=><Link key={href} href={href} onClick={()=>setPanel(null)} aria-current={active(href)?'page':undefined}><Icon size={19} aria-hidden="true"/>{t(en,th)}</Link>)}</nav>
-   <div className={navStyles.preferences}><button type="button" onClick={onLanguage}> {lang==='en'?'ภาษาไทย':'English'}</button><button type="button" aria-pressed={theme==='dark'} onClick={onTheme}>{theme==='dark'?<Sun size={18}/>:<Moon size={18}/>} {theme==='dark'?t('Light mode','โหมดสว่าง'):t('Dark mode','โหมดมืด')}</button></div>
-  </div>}
- </header>;
+export default function App() {
+  const path = usePathname(),
+    router = useRouter();
+  const [data, setData] = useState<Bootstrap | null>(null),
+    [error, setError] = useState(""),
+    [search, setSearch] = useState(""),
+    [lang, setLang] = useState<"en" | "th">("en"),
+    [theme, setTheme] = useState<"light" | "dark">("light"),
+    [reducedEffects, setReducedEffects] = useState(false);
+  const refresh = useCallback(async () => {
+    const b = await api<Bootstrap>("bootstrap");
+    setData(b);
+    return b;
+  }, []);
+  useEffect(() => {
+    let active = true;
+    startup ??= initialize();
+    startup
+      .then((b) => {
+        if (active) setData(b);
+      })
+      .catch((e) => {
+        startup = null;
+        if (active) setError(e.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+  useEffect(() => {
+    setSearch("");
+  }, [path]);
+  useEffect(() => {
+    setReducedEffects(localStorage.getItem("sora-reduce-effects") === "true");
+    const saved = localStorage.getItem("oonchai-language");
+    if (saved === "th" || saved === "en") setLang(saved);
+    const savedTheme = localStorage.getItem("oonchai-theme");
+    if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
+  }, []);
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("oonchai-theme", theme);
+  }, [theme]);
+  useEffect(() => {
+    document.documentElement.classList.toggle("reduce-effects", reducedEffects);
+    localStorage.setItem("sora-reduce-effects", String(reducedEffects));
+  }, [reducedEffects]);
+  const t = (english: string, thai: string) => (lang === "th" ? thai : english);
+  const chars = data?.characters || [],
+    worlds = data?.worlds || [];
+  const filteredChars = chars.filter((c) =>
+    `${c.name} ${c.description} ${c.tags.join(" ")}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
+  const filteredWorlds = worlds.filter((w) =>
+    `${w.name} ${w.description} ${w.genre}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
+  async function chatNow(c: Character) {
+    setError("");
+    try {
+      if (!data?.user) {
+        router.push("/account");
+        return;
+      }
+      const conv = await api<Conversation>("conversations", "POST", {
+        character_ids: [c.id],
+        world_id: null,
+        scenario_id: null,
+        persona_id: null,
+      });
+      await refresh();
+      router.push(`/chat/${conv.id}`);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  const segments = path.split("/").filter(Boolean);
+  let content;
+  if (!data)
+    content = (
+      <div className="loading glass" role="status" aria-live="polite">
+        <Sparkles className="loading-mark" />
+        <h1>{t("Opening Oonchai…", "กำลังเปิด Oonchai…")}</h1>
+        <p>
+          {t(
+            "Bringing your characters and scenarios together.",
+            "กำลังพาตัวละครและซีนาริโอของคุณมาพบกัน",
+          )}
+        </p>
+        {error && (
+          <>
+            <ErrorNote message={error} />
+            <button className="button" onClick={() => location.reload()}>
+              {t("Try again", "ลองอีกครั้ง")}
+            </button>
+          </>
+        )}
+      </div>
+    );
+  else if (search)
+    content = (
+      <>
+        <PageTitle
+          title={t(`Searching for “${search}”`, `กำลังค้นหา “${search}”`)}
+          description={t(
+            `${filteredChars.length} characters · ${filteredWorlds.length} scenarios`,
+            `${filteredChars.length} ตัวละคร · ${filteredWorlds.length} ซีนาริโอ`,
+          )}
+        />
+        <SectionTitle>{t("Characters", "ตัวละคร")}</SectionTitle>
+        <div className="character-grid">
+          {filteredChars.map((c) => (
+            <CharacterCard key={c.id} character={c} />
+          ))}
+        </div>
+        <SectionTitle>{t("Scenarios", "ซีนาริโอ")}</SectionTitle>
+        <div className="world-grid">
+          {filteredWorlds.map((w) => (
+            <WorldCard key={w.id} world={w} />
+          ))}
+        </div>
+        {!filteredChars.length && !filteredWorlds.length && (
+          <Empty
+            title={t("A story yet to be told", "เรื่องราวที่ยังไม่ได้เริ่ม")}
+          >
+            {t(
+              "Try another name, genre, or personality.",
+              "ลองค้นหาด้วยชื่อ แนวเรื่อง หรือนิสัยอื่น",
+            )}
+          </Empty>
+        )}
+      </>
+    );
+  else if (path === "/") content = <Home data={data} />;
+  else if (path === "/characters/new")
+    content = <CharacterForm data={data} refresh={refresh} />;
+  else if (path === "/worlds/new") content = <WorldForm refresh={refresh} />;
+  else if (path === "/personas/new")
+    content = <PersonaForm data={data} refresh={refresh} />;
+  else if (segments[0] === "characters" && segments[1]) {
+    const character = chars.find((c) => c.id === segments[1]);
+    content = (
+      <CharacterDetail
+        character={character}
+        canEdit={Boolean(
+          character?.owner_id && character.owner_id === data.user?.id,
+        )}
+        onChat={chatNow}
+        onUpdate={refresh}
+      />
+    );
+  } else if (segments[0] === "worlds" && segments[1])
+    content = (
+      <WorldDetail
+        key={segments[1]}
+        id={segments[1]}
+        data={data}
+        refresh={refresh}
+      />
+    );
+  else if (segments[0] === "chat" && segments[1])
+    content = (
+      <Chat key={segments[1]} id={segments[1]} data={data} refresh={refresh} />
+    );
+  else if (path === "/characters" || path === "/worlds")
+    content = (
+      <Discovery
+        type={path === "/characters" ? "characters" : "worlds"}
+        data={data}
+      />
+    );
+  else if (path === "/create")
+    content = (
+      <>
+        <PageTitle
+          eyebrow={t(
+            "YOUR IMAGINATION, YOUR RULES",
+            "จินตนาการของคุณ กฎของคุณ",
+          )}
+          title={t(
+            "Choose where your story begins",
+            "เลือกจุดเริ่มต้นของเรื่องราว",
+          )}
+          description={t(
+            "Create someone to talk with, or build a scenario to step into.",
+            "สร้างใครสักคนเพื่อพูดคุย หรือสร้างซีนาริโอเพื่อก้าวเข้าไป",
+          )}
+        />
+        <div className="create-primary">
+          <Link
+            href="/characters/new"
+            className="glass create-option create-character"
+          >
+            <span className="create-option-icon">
+              <UsersRound />
+            </span>
+            <span className="eyebrow">
+              {t("START WITH A CONNECTION", "เริ่มจากความสัมพันธ์")}
+            </span>
+            <h2>{t("Create Character", "สร้างตัวละคร")}</h2>
+            <p>
+              {t(
+                "Give an original character a personality, voice, and history. Chat immediately without a scenario or persona.",
+                "มอบนิสัย น้ำเสียง และเรื่องราวให้ตัวละครของคุณ แล้วเริ่มแชตได้ทันทีโดยไม่ต้องมีซีนาริโอหรือ Persona",
+              )}
+            </p>
+            <span className="button primary">
+              {t("Create Character", "สร้างตัวละคร")}
+              <ArrowRight size={17} />
+            </span>
+          </Link>
+          <Link href="/worlds/new" className="glass create-option create-world">
+            <span className="create-option-icon">
+              <Globe2 />
+            </span>
+            <span className="eyebrow">
+              {t("START WITH A UNIVERSE", "เริ่มจากจักรวาล")}
+            </span>
+            <h2>{t("Create Scenario", "สร้างซีนาริโอ")}</h2>
+            <p>
+              {t(
+                "Shape lore, rules, places, and factions. Then bring in characters and enter with a persona.",
+                "กำหนดตำนาน กฎ สถานที่ และกลุ่มต่าง ๆ แล้วพาตัวละครเข้ามาพร้อม Persona ของคุณ",
+              )}
+            </p>
+            <span className="button primary">
+              {t("Create Scenario", "สร้างซีนาริโอ")}
+              <ArrowRight size={17} />
+            </span>
+          </Link>
+        </div>
+        <Link href="/personas/new" className="glass create-persona">
+          <span className="creation-icon">
+            <UserRound size={22} />
+          </span>
+          <div>
+            <span className="eyebrow">
+              {t("OPTIONAL IDENTITY", "ตัวตนเสริม")}
+            </span>
+            <h2>{t("Create Persona", "สร้าง Persona")}</h2>
+            <p>
+              {t(
+                "Define who you become inside a scenario when you are ready.",
+                "กำหนดว่าคุณจะเป็นใครในซีนาริโอเมื่อพร้อม",
+              )}
+            </p>
+          </div>
+          <span className="text-link">
+            {t("Create Persona", "สร้าง Persona")}
+            <ArrowRight size={16} />
+          </span>
+        </Link>
+      </>
+    );
+  else if (path === "/personas")
+    content = (
+      <>
+        <PageTitle
+          title={t("My Personas", "Persona ของฉัน")}
+          description={t(
+            "A different you, for every story.",
+            "ตัวตนที่แตกต่างในทุกเรื่องราว",
+          )}
+        >
+          <Link className="button primary" href="/personas/new">
+            <Plus size={17} />
+            {t("Create Persona", "สร้าง Persona")}
+          </Link>
+        </PageTitle>
+        <div className="persona-grid">
+          {data.personas.map((p) => (
+            <article className="glass persona-card" key={p.id}>
+              <UserRound size={32} />
+              <h2>{p.name}</h2>
+              <span className="pill">
+                {p.role || t("A new beginning", "การเริ่มต้นครั้งใหม่")}
+              </span>
+              <p>
+                {p.backstory ||
+                  p.description ||
+                  t("Your story is yours to write.", "เรื่องราวนี้เป็นของคุณ")}
+              </p>
+              {p.world_id && (
+                <Link className="text-link" href={`/worlds/${p.world_id}`}>
+                  {t("Enter", "เข้าสู่")}{" "}
+                  {worlds.find((w) => w.id === p.world_id)?.name}
+                  <ArrowRight size={16} />
+                </Link>
+              )}
+            </article>
+          ))}
+        </div>
+        {!data.personas.length && (
+          <Empty
+            title={t("Who will you become?", "คุณจะเป็นใคร?")}
+            href="/personas/new"
+            label={t("Create Persona", "สร้าง Persona")}
+          >
+            {t(
+              "A traveler, a mage, or someone entirely your own.",
+              "นักเดินทาง จอมเวท หรือใครสักคนที่เป็นคุณอย่างแท้จริง",
+            )}
+          </Empty>
+        )}
+      </>
+    );
+  else if (path === "/chat" || path === "/library")
+    content = (
+      <>
+        <PageTitle
+          title={
+            path === "/chat"
+              ? t("Your conversations", "บทสนทนาของคุณ")
+              : t("Your library", "คลังเรื่องราวของคุณ")
+          }
+          description={t(
+            "Every connection has a story. Pick up where you left off.",
+            "ทุกความสัมพันธ์มีเรื่องราว กลับมาต่อจากที่ค้างไว้",
+          )}
+        />
+        <Recent data={data} full />
+        {path === "/library" && (
+          <>
+            <SectionTitle>{t("Your characters", "ตัวละครของคุณ")}</SectionTitle>
+            <div className="character-grid">
+              {chars
+                .filter((c) => c.owner_id === data.user?.id)
+                .map((c) => (
+                  <CharacterCard key={c.id} character={c} />
+                ))}
+            </div>
+            <SectionTitle>{t("Your scenarios", "ซีนาริโอของคุณ")}</SectionTitle>
+            <div className="world-grid">
+              {worlds
+                .filter((w) => w.owner_id === data.user?.id)
+                .map((w) => (
+                  <WorldCard key={w.id} world={w} />
+                ))}
+            </div>
+          </>
+        )}
+      </>
+    );
+  else if (path === "/account")
+    content = (
+      <>
+        <PageTitle
+          title={t("Account", "บัญชี")}
+          description={t(
+            "Your identity and sign-in settings.",
+            "ตัวตนและการเข้าสู่ระบบของคุณ",
+          )}
+        />
+        <div className="settings-grid">
+          <section className="glass panel">
+            <h2>{t("Your account", "บัญชีของคุณ")}</h2>
+            <div className="account-block">
+              <Portrait avatar={data?.user?.picture || "4"} />
+              <div>
+                <h3>
+                  {data.user?.name ||
+                    t("Welcome, traveler", "ยินดีต้อนรับ นักเดินทาง")}
+                </h3>
+                <p>
+                  {data.user?.guest
+                    ? t(
+                        "Local guest · saved in this browser session",
+                        "ผู้เยี่ยมชม · บันทึกในเซสชันเบราว์เซอร์นี้",
+                      )
+                    : data.user
+                      ? t(
+                          "Signed in with Google",
+                          "เข้าสู่ระบบด้วย Google แล้ว",
+                        )
+                      : t(
+                          "Sign in to save your characters and stories.",
+                          "เข้าสู่ระบบเพื่อบันทึกตัวละครและเรื่องราว",
+                        )}
+                </p>
+              </div>
+            </div>
+            {(!data.user || data.user.guest) && (
+              <a className="button primary" href="/api/auth/google">
+                {t("Continue with Google", "ดำเนินการต่อด้วย Google")}
+                <ArrowRight size={16} />
+              </a>
+            )}
+            {!data.googleReady && (
+              <p className="muted">
+                {t(
+                  "Google sign-in is waiting for project credentials.",
+                  "การเข้าสู่ระบบ Google กำลังรอข้อมูลรับรองของโปรเจกต์",
+                )}
+              </p>
+            )}
+            {data.user && !data.user.guest && (
+              <button
+                className="button"
+                onClick={async () => {
+                  await api("auth/logout", "POST", {});
+                  startup = null;
+                  location.href = "/";
+                }}
+              >
+                <LogOut size={16} />
+                {t("Sign out", "ออกจากระบบ")}
+              </button>
+            )}
+          </section>
+        </div>
+      </>
+    );
+  else if (path === "/settings")
+    content = (
+      <>
+        <PageTitle
+          title={t("Settings", "ตั้งค่า")}
+          description={t(
+            "AI connection and appearance.",
+            "การเชื่อมต่อ AI และรูปลักษณ์",
+          )}
+        />
+        <div className="settings-grid">
+          <section className="glass panel">
+            <h2>{t("AI connection", "การเชื่อมต่อ AI")}</h2>
+            <div className="connection">
+              <span className={`status-dot ${data.groqReady ? "ready" : ""}`} />
+              <strong>Groq</strong>
+              <span className="pill">
+                {data.groqReady
+                  ? t("Connected", "เชื่อมต่อแล้ว")
+                  : t("Setup needed", "ต้องตั้งค่า")}
+              </span>
+            </div>
+            <p>
+              {t("Model", "โมเดล")}: {data.model}
+            </p>
+            <p className="muted">
+              {t(
+                "Your stories use character memory, relationship context, and the scenario’s shared history.",
+                "เรื่องราวใช้ความทรงจำของตัวละคร บริบทความสัมพันธ์ และประวัติร่วมของซีนาริโอ",
+              )}
+            </p>
+            {!data.groqReady && (
+              <p className="notice">
+                {t(
+                  "Set GROQ_API_KEY in the server environment to enable replies.",
+                  "ตั้งค่า GROQ_API_KEY ใน environment ของเซิร์ฟเวอร์เพื่อเปิดใช้งานการตอบกลับ",
+                )}
+              </p>
+            )}
+          </section>
+          <section className="glass panel">
+            <h2>{t("Appearance", "รูปลักษณ์")}</h2>
+            <p>
+              {t(
+                "Make space for your story.",
+                "จัดพื้นที่ให้เหมาะกับเรื่องราวของคุณ",
+              )}
+            </p>
+            <div className="settings-actions">
+              <button
+                className="button"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                {theme === "dark"
+                  ? t("Switch to light mode", "เปลี่ยนเป็นโหมดสว่าง")
+                  : t("Switch to dark mode", "เปลี่ยนเป็นโหมดมืด")}
+              </button>
+              <button
+                className="button"
+                aria-pressed={reducedEffects}
+                onClick={() => setReducedEffects((value) => !value)}
+              >
+                {reducedEffects
+                  ? t("Use full transparency", "ใช้ความโปร่งใสเต็มรูปแบบ")
+                  : t("Reduce transparency", "ลดความโปร่งใส")}
+              </button>
+            </div>
+          </section>
+        </div>
+      </>
+    );
+  else
+    content = (
+      <Empty
+        title={t("This path is still unwritten", "หน้านี้ยังไม่มีเรื่องราว")}
+        href="/"
+        label={t("Back to Discover", "กลับไปหน้าค้นพบ")}
+      >
+        {t("Let’s find another story.", "ไปหาเรื่องราวอื่นกันเถอะ")}
+      </Empty>
+    );
+  return (
+    <LanguageProvider language={lang}>
+      <>
+        <a className="skip-link" href="#main-content">
+          {t("Skip to content", "ข้ามไปยังเนื้อหา")}
+        </a>
+        <div className="ambient" />
+        <div className="app-shell">
+          <div className="workspace">
+            <Navigation
+              key={path}
+              path={path}
+              user={data?.user ?? null}
+              lang={lang}
+              theme={theme}
+              search={search}
+              setSearch={setSearch}
+              onLanguage={() => {
+                const value = lang === "en" ? "th" : "en";
+                setLang(value);
+                localStorage.setItem("oonchai-language", value);
+              }}
+              onTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+            />
+            <main
+              id="main-content"
+              key={path}
+              className={`main-content ${segments[0] === "chat" && segments[1] ? "chat-page" : ""}`}
+              tabIndex={-1}
+            >
+              {error && data && <ErrorNote message={error} />}
+              <div className="page-enter">{content}</div>
+            </main>
+            <footer className="app-footer">
+              <span>
+                {t(
+                  "Oonchai · A place for your imagination",
+                  "Oonchai · พื้นที่สำหรับจินตนาการของคุณ",
+                )}
+              </span>
+              <span>
+                {t(
+                  "Meet a character. Build a scenario. Live your own story.",
+                  "พบตัวละคร สร้างซีนาริโอ และใช้ชีวิตในเรื่องราวของคุณ",
+                )}
+              </span>
+            </footer>
+          </div>
+        </div>
+      </>
+    </LanguageProvider>
+  );
+}
+type NavigationProps = {
+  path: string;
+  user: Bootstrap["user"];
+  lang: "en" | "th";
+  theme: "light" | "dark";
+  search: string;
+  setSearch: (value: string) => void;
+  onLanguage: () => void;
+  onTheme: () => void;
+};
+function Navigation({
+  path,
+  user,
+  lang,
+  theme,
+  search,
+  setSearch,
+  onLanguage,
+  onTheme,
+}: NavigationProps) {
+  const [panel, setPanel] = useState<"more" | "search" | null>(null);
+  const header = useRef<HTMLElement>(null),
+    moreButton = useRef<HTMLButtonElement>(null),
+    searchButton = useRef<HTMLButtonElement>(null),
+    searchInput = useRef<HTMLInputElement>(null);
+  const t = (en: string, th: string) => (lang === "th" ? th : en);
+  // Never fall back to an email address, including a provider-supplied name containing one.
+  const username =
+    user?.name?.trim() && !user.name.includes("@")
+      ? user.name.trim()
+      : user
+        ? t("Traveler", "นักเดินทาง")
+        : t("Sign in", "เข้าสู่ระบบ");
+  const active = (href: string) =>
+    href === "/" ? path === "/" : path === href || path.startsWith(href + "/");
+  const primary = [
+    ["/", "Discover", "ค้นพบ", House],
+    ["/chat", "Chat", "แชต", MessageCircle],
+    ["/characters", "Characters", "ตัวละคร", UsersRound],
+    ["/worlds", "Scenarios", "ซีนาริโอ", Globe2],
+  ] as const;
+  const secondary = [
+    ["/create", "Create", "สร้าง", Plus],
+    ["/personas", "My Personas", "Persona ของฉัน", UserRound],
+    ["/library", "Library", "คลังเรื่องราว", Library],
+    ["/account", "Account", "บัญชี", UserRound],
+    ["/settings", "Settings", "ตั้งค่า", Settings],
+  ] as const;
+  useEffect(() => {
+    if (panel === "search") searchInput.current?.focus();
+  }, [panel]);
+  useEffect(() => {
+    if (!panel) return;
+    const outside = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        !header.current?.contains(event.target)
+      )
+        setPanel(null);
+    };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [panel]);
+  return (
+    <header
+      ref={header}
+      className={navStyles.header}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+          setPanel(null);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && panel) {
+          event.preventDefault();
+          const button = panel === "search" ? searchButton : moreButton;
+          setPanel(null);
+          button.current?.focus();
+        }
+      }}
+    >
+      <div className={navStyles.bar}>
+        <Link
+          href="/"
+          className={navStyles.logo}
+          aria-label={t("Oonchai home", "หน้าหลัก Oonchai")}
+        >
+          <span aria-hidden="true" />
+        </Link>
+        <nav
+          className={navStyles.primary}
+          aria-label={t("Primary navigation", "เมนูหลัก")}
+        >
+          {primary.map(([href, en, th, Icon]) => (
+            <Link
+              key={href}
+              href={href}
+              aria-current={active(href) ? "page" : undefined}
+            >
+              <Icon size={18} aria-hidden="true" />
+              <span>{t(en, th)}</span>
+            </Link>
+          ))}
+        </nav>
+        <div className={navStyles.actions}>
+          <button
+            ref={searchButton}
+            className={navStyles.icon}
+            type="button"
+            aria-label={t("Search", "ค้นหา")}
+            aria-expanded={panel === "search"}
+            aria-controls="navigation-search"
+            onClick={() => setPanel(panel === "search" ? null : "search")}
+          >
+            <Search size={20} />
+            {search && <span className={navStyles.searchDot} />}
+          </button>
+          <button
+            ref={moreButton}
+            className={navStyles.icon}
+            type="button"
+            aria-label={t(
+              "More navigation and settings",
+              "เมนูเพิ่มเติมและตั้งค่า",
+            )}
+            aria-expanded={panel === "more"}
+            aria-controls="navigation-more"
+            onClick={() => setPanel(panel === "more" ? null : "more")}
+          >
+            {panel === "more" ? <X size={20} /> : <Menu size={20} />}
+          </button>
+          <Link
+            href="/account"
+            className={navStyles.account}
+            aria-label={t("Account: ", "บัญชี: ") + username}
+            title={username}
+          >
+            <Portrait avatar={user?.picture || "4"} />
+            <span className={navStyles.username}>{username}</span>
+            <ChevronDown size={14} aria-hidden="true" />
+          </Link>
+        </div>
+      </div>
+      {panel === "search" && (
+        <div id="navigation-search" className={navStyles.searchPanel}>
+          <Search size={20} aria-hidden="true" />
+          <input
+            ref={searchInput}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            aria-label={t(
+              "Search characters and scenarios",
+              "ค้นหาตัวละครและซีนาริโอ",
+            )}
+            placeholder={t(
+              "Search characters, scenarios…",
+              "ค้นหาตัวละคร ซีนาริโอ…",
+            )}
+          />
+          <button
+            type="button"
+            className={navStyles.icon}
+            aria-label={t("Clear search", "ล้างการค้นหา")}
+            onClick={() => {
+              setSearch("");
+              searchInput.current?.focus();
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+      {panel === "more" && (
+        <div id="navigation-more" className={navStyles.morePanel}>
+          <div className={navStyles.identity}>
+            <strong>{username}</strong>
+            <span>{t("Your story, your space", "พื้นที่เรื่องราวของคุณ")}</span>
+          </div>
+          <nav
+            className={navStyles.secondary}
+            aria-label={t("More navigation", "เมนูเพิ่มเติม")}
+          >
+            {secondary.map(([href, en, th, Icon]) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setPanel(null)}
+                aria-current={active(href) ? "page" : undefined}
+              >
+                <Icon size={19} aria-hidden="true" />
+                {t(en, th)}
+              </Link>
+            ))}
+          </nav>
+          <div className={navStyles.preferences}>
+            <button type="button" onClick={onLanguage}>
+              {" "}
+              {lang === "en" ? "ภาษาไทย" : "English"}
+            </button>
+            <button
+              type="button"
+              aria-pressed={theme === "dark"}
+              onClick={onTheme}
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}{" "}
+              {theme === "dark"
+                ? t("Light mode", "โหมดสว่าง")
+                : t("Dark mode", "โหมดมืด")}
+            </button>
+          </div>
+        </div>
+      )}
+    </header>
+  );
 }
 
-function Home({data}:{data:Bootstrap}){const {text:t}=useLanguage();const world=data.worlds.find(w=>w.id==='aetheria')||data.worlds[0];const continuation=data.conversations[0];return <><div className="welcome-line"><span><span className="tiny-star">✦</span> {t('A little curiosity. A whole new story.','ความอยากรู้นิดเดียว จุดเริ่มต้นของเรื่องราวใหม่')}</span><span>{t('YOUR STORY AWAITS','เรื่องราวของคุณกำลังรออยู่')}</span></div><div className="hero-grid"><section className="hero glass"><div className="hero-copy"><span className="eyebrow">{t('TWO WAYS TO BEGIN','สองทางเลือกเพื่อเริ่มต้น')}</span><h1>{t('Your character.','ตัวละครของคุณ')}<br/>{t('Your scenario.','ซีนาริโอของคุณ')}</h1><p>{t('Create someone unforgettable, or shape a scenario that could only be yours.','สร้างใครสักคนที่น่าจดจำ หรือออกแบบซีนาริโอที่เป็นของคุณเพียงคนเดียว')}</p><div className="hero-actions"><Link className="button primary" href="/characters/new">{t('Create Character','สร้างตัวละคร')}<UsersRound size={17}/></Link><Link className="button translucent" href="/worlds/new">{t('Create Scenario','สร้างซีนาริโอ')}<Globe2 size={17}/></Link></div></div><div className="hero-foot"><span><span className="dot"/>{t('YOUR STORY STARTS HERE','เรื่องราวเริ่มต้นที่นี่')}</span><span>{t('“It all starts with you.”','“ทุกอย่างเริ่มต้นจากคุณ”')}</span></div></section><aside className="continue-card glass"><SectionTitle>{continuation?t('Continue your story','เล่าเรื่องราวต่อ'):t('Discover Oonchai','ค้นพบ Oonchai')}</SectionTitle><div className="continue-art"/><h3>{continuation?.name||world?.name||t('Your first story','เรื่องแรกของคุณ')}</h3><p>{continuation?t('Your next chapter is waiting.','บทต่อไปกำลังรออยู่'):world?t('A scenario full of possibilities.','ซีนาริโอที่เต็มไปด้วยความเป็นไปได้'):t('Create a character or scenario to begin.','สร้างตัวละครหรือซีนาริโอเพื่อเริ่มต้น')}</p><Link className="button primary" href={continuation?`/chat/${continuation.id}`:world?`/worlds/${world.id}`:'/create'}>{continuation?t('Continue','ดำเนินเรื่องต่อ'):world?t('Explore Scenario','สำรวจซีนาริโอ'):t('Start Creating','เริ่มสร้าง')}<ArrowRight size={16}/></Link></aside></div><div className="creation-strip" aria-label={t('Create in Oonchai','สร้างใน Oonchai')}><Link href="/characters/new" className="glass creation-cta"><span className="creation-icon"><UsersRound size={23}/></span><div><span className="eyebrow">{t('CHARACTER-FIRST','เริ่มจากตัวละคร')}</span><h2>{t('Create Character','สร้างตัวละคร')}</h2><p>{t('Chat directly. No scenario or persona needed.','แชตได้ทันที ไม่ต้องมีซีนาริโอหรือ Persona')}</p></div><Plus size={21}/></Link><Link href="/worlds/new" className="glass creation-cta"><span className="creation-icon"><Globe2 size={23}/></span><div><span className="eyebrow">{t('SCENARIO-FIRST','เริ่มจากซีนาริโอ')}</span><h2>{t('Create Scenario','สร้างซีนาริโอ')}</h2><p>{t('Build a scenario, then bring its cast together.','สร้างซีนาริโอ แล้วพาตัวละครมาพบกัน')}</p></div><Plus size={21}/></Link></div><section><SectionTitle href="/characters">{t('Characters to meet','ตัวละครที่รอพบคุณ')} <span className="section-kicker">{t('A connection begins with hello','ทุกความสัมพันธ์เริ่มจากคำทักทาย')}</span></SectionTitle><div className="character-grid home-characters">{[...data.characters].sort((a,b)=>Number(a.avatar)-Number(b.avatar)).slice(0,5).map(c=><CharacterCard key={c.id} character={c}/>)}</div>{!data.characters.length&&<Empty title={t('Create the first character','สร้างตัวละครคนแรก')} href="/characters/new" label={t('Create Character','สร้างตัวละคร')}>{t('Give someone a voice, then start chatting right away.','มอบเสียงให้ใครสักคน แล้วเริ่มแชตได้ทันที')}</Empty>}</section><div className="worlds-home-grid"><section className="glass world-section"><SectionTitle href="/worlds">{t('Scenarios to explore','ซีนาริโอที่น่าสำรวจ')}</SectionTitle><div className="worlds-home">{world&&<WorldCard world={world}/>}<Link className="world-invitation" href="/worlds/new"><Globe2 size={29}/><h3>{t('Your scenario belongs here','พื้นที่สำหรับซีนาริโอของคุณ')}</h3><p>{t('Write the lore. Make the rules.','เขียนตำนาน สร้างกฎ')}<br/>{t('Invite your characters in.','เชิญตัวละครของคุณเข้ามา')}</p><span className="text-link">{t('Create Scenario','สร้างซีนาริโอ')}<ArrowRight size={16}/></span></Link></div></section><section className="glass quick-panel"><SectionTitle>{t('Become anyone','เป็นใครก็ได้')}</SectionTitle><div className="persona-teaser"><span className="creation-icon"><UserRound size={25}/></span><div><h3>{t('Your story. Your identity.','เรื่องราวของคุณ ตัวตนของคุณ')}</h3><p>{t('A traveler, a mage, a mystery.','นักเดินทาง จอมเวท หรือปริศนา')}</p></div></div><Link href="/personas/new" className="button translucent">{t('Create Persona','สร้าง Persona')}<Plus size={16}/></Link></section></div><div className="bottom-grid"><section className="glass recent-panel"><SectionTitle href="/chat">{t('Recent conversations','บทสนทนาล่าสุด')}</SectionTitle><Recent data={data}/></section><section className="glass quote-panel"><Feather size={25}/><h2>{t('Write your own legend.','เขียนตำนานของคุณเอง')}</h2><p>{t('Every choice matters. Every connection stays.','ทุกการเลือกมีความหมาย ทุกความสัมพันธ์ยังคงอยู่')}</p><div className="quote-line"/></section></div></>;}
-export function Recent({data,full=false}:{data:Bootstrap;full?:boolean}){const {language,text:t}=useLanguage();const rows=full?data.conversations:data.conversations.slice(0,3);return rows.length?<div className={`recent-list ${full?'conversation-cards':''}`}>{rows.map(c=>{const ch=data.characters.find(ch=>ch.id===c.character_ids[0]);return <Link href={`/chat/${c.id}`} key={c.id}><Portrait avatar={ch?.avatar||'0'}/><div><strong>{c.name}</strong><p>{c.world_id?t('Scenario roleplay','โรลเพลย์ในซีนาริโอ'):t('A conversation, just for you','บทสนทนาสำหรับคุณ')}</p></div><span>{new Date(c.updated_at).toLocaleDateString(language==='th'?'th-TH':'en',{month:'short',day:'numeric'})}</span><ArrowRight size={16}/></Link>;})}</div>:<div className="recent-empty"><MessageCircle size={23}/><div><h3>{t('Your first hello is waiting.','คำทักทายแรกกำลังรออยู่')}</h3><p>{t('Meet a character, and your conversations will live here.','พบตัวละคร แล้วบทสนทนาของคุณจะอยู่ที่นี่')}</p></div><Link href="/characters" aria-label={t('Discover characters','ค้นพบตัวละคร')}><ArrowRight size={20}/></Link></div>;}
-function Discovery({type,data}:{type:'characters'|'worlds';data:Bootstrap}){const {text:t}=useLanguage();const [filter,setFilter]=useState('All');const characterMode=type==='characters';const filters=characterMode?['All','Standalone','Scenario characters','My characters']:['All','Fantasy','Original','My scenarios'];const filterLabel=(value:string)=>({All:t('All','ทั้งหมด'),Standalone:t('Standalone','แชตเดี่ยว'),'Scenario characters':t('Scenario characters','ตัวละครในซีนาริโอ'),'My characters':t('My characters','ตัวละครของฉัน'),Fantasy:t('Fantasy','แฟนตาซี'),Original:t('Original','ต้นฉบับ'),'My scenarios':t('My scenarios','ซีนาริโอของฉัน')}[value]||value);const chars=data.characters.filter(c=>filter==='All'||(filter==='Standalone'&&!c.world_id)||(filter==='Scenario characters'&&!!c.world_id)||(filter==='My characters'&&c.owner_id===data.user?.id));const worlds=data.worlds.filter(w=>filter==='All'||w.genre===filter||(filter==='My scenarios'&&w.owner_id===data.user?.id));return <><PageTitle eyebrow={characterMode?t('EVERY CONNECTION IS A NEW BEGINNING','ทุกความสัมพันธ์คือการเริ่มต้นใหม่'):t('FIND YOUR NEXT CHAPTER','ค้นหาบทต่อไปของคุณ')} title={characterMode?t('Characters','ตัวละคร'):t('Scenarios','ซีนาริโอ')} description={characterMode?t('Someone to laugh with, dream with, and share a little of your story.','ใครสักคนที่จะหัวเราะ ฝัน และแบ่งปันเรื่องราวไปด้วยกัน'):t('Step into a story. Or build a universe of your own.','ก้าวเข้าสู่เรื่องราว หรือสร้างจักรวาลของคุณเอง')}><Link href={`/${type}/new`} className="button primary"><Plus size={17}/>{characterMode?t('Create Character','สร้างตัวละคร'):t('Create Scenario','สร้างซีนาริโอ')}</Link></PageTitle><div className="filter-row">{filters.map(f=><button key={f} className={`filter ${filter===f?'selected':''}`} onClick={()=>setFilter(f)}>{filterLabel(f)}{filter===f&&<Check size={14}/>}</button>)}</div><div className={characterMode?'character-grid discovery-characters':'world-grid'}>{characterMode?chars.map(c=><CharacterCard key={c.id} character={c}/>):worlds.map(w=><WorldCard key={w.id} world={w}/>)}</div>{!(characterMode?chars:worlds).length&&<Empty title={t('Make the first story','สร้างเรื่องราวแรก')} href={`/${type}/new`} label={characterMode?t('Create Character','สร้างตัวละคร'):t('Create Scenario','สร้างซีนาริโอ')}>{t('Nothing here yet. Your imagination can change that.','ยังไม่มีอะไรที่นี่ จินตนาการของคุณเปลี่ยนมันได้')}</Empty>}</>;}
+function Home({ data }: { data: Bootstrap }) {
+  const { text: t } = useLanguage();
+  const world = data.worlds.find((w) => w.id === "aetheria") || data.worlds[0];
+  const continuation = data.conversations[0];
+  const recommendations = (
+    <section className="recommendations">
+      <SectionTitle href="/characters">
+        {t("Recommend Character", "ตัวละครแนะนำ")}{" "}
+        <span className="section-kicker">
+          {t(
+            "A connection begins with hello",
+            "ทุกความสัมพันธ์เริ่มจากคำทักทาย",
+          )}
+        </span>
+      </SectionTitle>
+      <div className="character-grid home-characters">
+        {[...data.characters]
+          .sort((a, b) => Number(a.avatar) - Number(b.avatar))
+          .slice(0, 5)
+          .map((c) => (
+            <CharacterCard key={c.id} character={c} />
+          ))}
+      </div>
+      {!data.characters.length && (
+        <Empty
+          title={t("Create the first character", "สร้างตัวละครคนแรก")}
+          href="/characters/new"
+          label={t("Create Character", "สร้างตัวละคร")}
+        >
+          {t(
+            "Give someone a voice, then start chatting right away.",
+            "มอบเสียงให้ใครสักคน แล้วเริ่มแชตได้ทันที",
+          )}
+        </Empty>
+      )}
+    </section>
+  );
+  return (
+    <>
+      <div className="welcome-line">
+        <span>
+          <span className="tiny-star">✦</span>{" "}
+          {t(
+            "A little curiosity. A whole new story.",
+            "ความอยากรู้นิดเดียว จุดเริ่มต้นของเรื่องราวใหม่",
+          )}
+        </span>
+        <span>{t("YOUR STORY AWAITS", "เรื่องราวของคุณกำลังรออยู่")}</span>
+      </div>
+      {recommendations}
+      <div className="hero-grid">
+        <section className="hero glass">
+          <div className="hero-copy">
+            <span className="eyebrow">
+              {t("TWO WAYS TO BEGIN", "สองทางเลือกเพื่อเริ่มต้น")}
+            </span>
+            <h1>
+              {t("Your character.", "ตัวละครของคุณ")}
+              <br />
+              {t("Your scenario.", "ซีนาริโอของคุณ")}
+            </h1>
+            <p>
+              {t(
+                "Create someone unforgettable, or shape a scenario that could only be yours.",
+                "สร้างใครสักคนที่น่าจดจำ หรือออกแบบซีนาริโอที่เป็นของคุณเพียงคนเดียว",
+              )}
+            </p>
+            <div className="hero-actions">
+              <Link className="button primary" href="/characters/new">
+                {t("Create Character", "สร้างตัวละคร")}
+                <UsersRound size={17} />
+              </Link>
+              <Link className="button translucent" href="/worlds/new">
+                {t("Create Scenario", "สร้างซีนาริโอ")}
+                <Globe2 size={17} />
+              </Link>
+            </div>
+          </div>
+          <div className="hero-foot">
+            <span>
+              <span className="dot" />
+              {t("YOUR STORY STARTS HERE", "เรื่องราวเริ่มต้นที่นี่")}
+            </span>
+            <span>
+              {t("“It all starts with you.”", "“ทุกอย่างเริ่มต้นจากคุณ”")}
+            </span>
+          </div>
+        </section>
+        <aside className="continue-card glass">
+          <SectionTitle>
+            {continuation
+              ? t("Continue your story", "เล่าเรื่องราวต่อ")
+              : t("Discover Oonchai", "ค้นพบ Oonchai")}
+          </SectionTitle>
+          <div className="continue-art" />
+          <h3>
+            {continuation?.name ||
+              world?.name ||
+              t("Your first story", "เรื่องแรกของคุณ")}
+          </h3>
+          <p>
+            {continuation
+              ? t("Your next chapter is waiting.", "บทต่อไปกำลังรออยู่")
+              : world
+                ? t(
+                    "A scenario full of possibilities.",
+                    "ซีนาริโอที่เต็มไปด้วยความเป็นไปได้",
+                  )
+                : t(
+                    "Create a character or scenario to begin.",
+                    "สร้างตัวละครหรือซีนาริโอเพื่อเริ่มต้น",
+                  )}
+          </p>
+          <Link
+            className="button primary"
+            href={
+              continuation
+                ? `/chat/${continuation.id}`
+                : world
+                  ? `/worlds/${world.id}`
+                  : "/create"
+            }
+          >
+            {continuation
+              ? t("Continue", "ดำเนินเรื่องต่อ")
+              : world
+                ? t("Explore Scenario", "สำรวจซีนาริโอ")
+                : t("Start Creating", "เริ่มสร้าง")}
+            <ArrowRight size={16} />
+          </Link>
+        </aside>
+      </div>
+      <div
+        className="creation-strip"
+        aria-label={t("Create in Oonchai", "สร้างใน Oonchai")}
+      >
+        <Link href="/characters/new" className="glass creation-cta">
+          <span className="creation-icon">
+            <UsersRound size={23} />
+          </span>
+          <div>
+            <span className="eyebrow">
+              {t("CHARACTER-FIRST", "เริ่มจากตัวละคร")}
+            </span>
+            <h2>{t("Create Character", "สร้างตัวละคร")}</h2>
+            <p>
+              {t(
+                "Chat directly. No scenario or persona needed.",
+                "แชตได้ทันที ไม่ต้องมีซีนาริโอหรือ Persona",
+              )}
+            </p>
+          </div>
+          <Plus size={21} />
+        </Link>
+        <Link href="/worlds/new" className="glass creation-cta">
+          <span className="creation-icon">
+            <Globe2 size={23} />
+          </span>
+          <div>
+            <span className="eyebrow">
+              {t("SCENARIO-FIRST", "เริ่มจากซีนาริโอ")}
+            </span>
+            <h2>{t("Create Scenario", "สร้างซีนาริโอ")}</h2>
+            <p>
+              {t(
+                "Build a scenario, then bring its cast together.",
+                "สร้างซีนาริโอ แล้วพาตัวละครมาพบกัน",
+              )}
+            </p>
+          </div>
+          <Plus size={21} />
+        </Link>
+      </div>
+      <div className="worlds-home-grid">
+        <section className="glass world-section">
+          <SectionTitle href="/worlds">
+            {t("Scenarios to explore", "ซีนาริโอที่น่าสำรวจ")}
+          </SectionTitle>
+          <div className="worlds-home">
+            {world && <WorldCard world={world} />}
+            <Link className="world-invitation" href="/worlds/new">
+              <Globe2 size={29} />
+              <h3>
+                {t("Your scenario belongs here", "พื้นที่สำหรับซีนาริโอของคุณ")}
+              </h3>
+              <p>
+                {t("Write the lore. Make the rules.", "เขียนตำนาน สร้างกฎ")}
+                <br />
+                {t("Invite your characters in.", "เชิญตัวละครของคุณเข้ามา")}
+              </p>
+              <span className="text-link">
+                {t("Create Scenario", "สร้างซีนาริโอ")}
+                <ArrowRight size={16} />
+              </span>
+            </Link>
+          </div>
+        </section>
+        <section className="glass quick-panel">
+          <SectionTitle>{t("Become anyone", "เป็นใครก็ได้")}</SectionTitle>
+          <div className="persona-teaser">
+            <span className="creation-icon">
+              <UserRound size={25} />
+            </span>
+            <div>
+              <h3>
+                {t("Your story. Your identity.", "เรื่องราวของคุณ ตัวตนของคุณ")}
+              </h3>
+              <p>
+                {t(
+                  "A traveler, a mage, a mystery.",
+                  "นักเดินทาง จอมเวท หรือปริศนา",
+                )}
+              </p>
+            </div>
+          </div>
+          <Link href="/personas/new" className="button translucent">
+            {t("Create Persona", "สร้าง Persona")}
+            <Plus size={16} />
+          </Link>
+        </section>
+      </div>
+      <div className="bottom-grid">
+        <section className="glass recent-panel">
+          <SectionTitle href="/chat">
+            {t("Recent conversations", "บทสนทนาล่าสุด")}
+          </SectionTitle>
+          <Recent data={data} />
+        </section>
+        <section className="glass quote-panel">
+          <Feather size={25} />
+          <h2>{t("Write your own legend.", "เขียนตำนานของคุณเอง")}</h2>
+          <p>
+            {t(
+              "Every choice matters. Every connection stays.",
+              "ทุกการเลือกมีความหมาย ทุกความสัมพันธ์ยังคงอยู่",
+            )}
+          </p>
+          <div className="quote-line" />
+        </section>
+      </div>
+    </>
+  );
+}
+export function Recent({
+  data,
+  full = false,
+}: {
+  data: Bootstrap;
+  full?: boolean;
+}) {
+  const { language, text: t } = useLanguage();
+  const rows = full ? data.conversations : data.conversations.slice(0, 3);
+  return rows.length ? (
+    <div className={`recent-list ${full ? "conversation-cards" : ""}`}>
+      {rows.map((c) => {
+        const ch = data.characters.find((ch) => ch.id === c.character_ids[0]);
+        return (
+          <Link href={`/chat/${c.id}`} key={c.id}>
+            <Portrait avatar={ch?.avatar || "0"} />
+            <div>
+              <strong>{c.name}</strong>
+              <p>
+                {c.world_id
+                  ? t("Scenario roleplay", "โรลเพลย์ในซีนาริโอ")
+                  : t("A conversation, just for you", "บทสนทนาสำหรับคุณ")}
+              </p>
+            </div>
+            <span>
+              {new Date(c.updated_at).toLocaleDateString(
+                language === "th" ? "th-TH" : "en",
+                { month: "short", day: "numeric" },
+              )}
+            </span>
+            <ArrowRight size={16} />
+          </Link>
+        );
+      })}
+    </div>
+  ) : (
+    <div className="recent-empty">
+      <MessageCircle size={23} />
+      <div>
+        <h3>{t("Your first hello is waiting.", "คำทักทายแรกกำลังรออยู่")}</h3>
+        <p>
+          {t(
+            "Meet a character, and your conversations will live here.",
+            "พบตัวละคร แล้วบทสนทนาของคุณจะอยู่ที่นี่",
+          )}
+        </p>
+      </div>
+      <Link
+        href="/characters"
+        aria-label={t("Discover characters", "ค้นพบตัวละคร")}
+      >
+        <ArrowRight size={20} />
+      </Link>
+    </div>
+  );
+}
+function Discovery({
+  type,
+  data,
+}: {
+  type: "characters" | "worlds";
+  data: Bootstrap;
+}) {
+  const { text: t } = useLanguage();
+  const [filter, setFilter] = useState("All");
+  const characterMode = type === "characters";
+  const filters = characterMode
+    ? ["All", "Standalone", "Scenario characters", "My characters"]
+    : ["All", "Fantasy", "Original", "My scenarios"];
+  const filterLabel = (value: string) =>
+    ({
+      All: t("All", "ทั้งหมด"),
+      Standalone: t("Standalone", "แชตเดี่ยว"),
+      "Scenario characters": t("Scenario characters", "ตัวละครในซีนาริโอ"),
+      "My characters": t("My characters", "ตัวละครของฉัน"),
+      Fantasy: t("Fantasy", "แฟนตาซี"),
+      Original: t("Original", "ต้นฉบับ"),
+      "My scenarios": t("My scenarios", "ซีนาริโอของฉัน"),
+    })[value] || value;
+  const chars = data.characters.filter(
+    (c) =>
+      filter === "All" ||
+      (filter === "Standalone" && !c.world_id) ||
+      (filter === "Scenario characters" && !!c.world_id) ||
+      (filter === "My characters" && c.owner_id === data.user?.id),
+  );
+  const worlds = data.worlds.filter(
+    (w) =>
+      filter === "All" ||
+      w.genre === filter ||
+      (filter === "My scenarios" && w.owner_id === data.user?.id),
+  );
+  return (
+    <>
+      <PageTitle
+        eyebrow={
+          characterMode
+            ? t(
+                "EVERY CONNECTION IS A NEW BEGINNING",
+                "ทุกความสัมพันธ์คือการเริ่มต้นใหม่",
+              )
+            : t("FIND YOUR NEXT CHAPTER", "ค้นหาบทต่อไปของคุณ")
+        }
+        title={
+          characterMode
+            ? t("Characters", "ตัวละคร")
+            : t("Scenarios", "ซีนาริโอ")
+        }
+        description={
+          characterMode
+            ? t(
+                "Someone to laugh with, dream with, and share a little of your story.",
+                "ใครสักคนที่จะหัวเราะ ฝัน และแบ่งปันเรื่องราวไปด้วยกัน",
+              )
+            : t(
+                "Step into a story. Or build a universe of your own.",
+                "ก้าวเข้าสู่เรื่องราว หรือสร้างจักรวาลของคุณเอง",
+              )
+        }
+      >
+        <Link href={`/${type}/new`} className="button primary">
+          <Plus size={17} />
+          {characterMode
+            ? t("Create Character", "สร้างตัวละคร")
+            : t("Create Scenario", "สร้างซีนาริโอ")}
+        </Link>
+      </PageTitle>
+      <div className="filter-row">
+        {filters.map((f) => (
+          <button
+            key={f}
+            className={`filter ${filter === f ? "selected" : ""}`}
+            onClick={() => setFilter(f)}
+          >
+            {filterLabel(f)}
+            {filter === f && <Check size={14} />}
+          </button>
+        ))}
+      </div>
+      <div
+        className={
+          characterMode ? "character-grid discovery-characters" : "world-grid"
+        }
+      >
+        {characterMode
+          ? chars.map((c) => <CharacterCard key={c.id} character={c} />)
+          : worlds.map((w) => <WorldCard key={w.id} world={w} />)}
+      </div>
+      {!(characterMode ? chars : worlds).length && (
+        <Empty
+          title={t("Make the first story", "สร้างเรื่องราวแรก")}
+          href={`/${type}/new`}
+          label={
+            characterMode
+              ? t("Create Character", "สร้างตัวละคร")
+              : t("Create Scenario", "สร้างซีนาริโอ")
+          }
+        >
+          {t(
+            "Nothing here yet. Your imagination can change that.",
+            "ยังไม่มีอะไรที่นี่ จินตนาการของคุณเปลี่ยนมันได้",
+          )}
+        </Empty>
+      )}
+    </>
+  );
+}
