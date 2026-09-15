@@ -61,7 +61,7 @@ body{background-image:none}
 .hero{position:relative;min-height:480px;padding:clamp(28px,4vw,58px);overflow:hidden;background-color:#f8e8ed;background-image:url('/art/aetheria.png');background-position:center;background-size:cover;background-blend-mode:screen}
 .hero:after{background:transparent}
 .hero-copy,.hero-foot{position:relative;z-index:1}
-.hero h1{font-size:clamp(52px,6.3vw,92px);letter-spacing:-.055em;line-height:.88}
+.hero h1{font-size:clamp(42px,4.8vw,68px);letter-spacing:-.045em;line-height:.94;max-width:760px}
 .hero p{max-width:520px;font-size:17px}
 .hero-foot{position:absolute;left:clamp(28px,4vw,58px);right:clamp(28px,4vw,58px);bottom:28px;color:white}
 .continue-card{display:flex;flex-direction:column;padding:22px;overflow:hidden}
@@ -158,8 +158,8 @@ html[data-theme='dark'] .message-user>div:last-child{background:var(--purple);co
   .hero{min-height:430px}.continue-card{min-height:330px}.chat-layout{height:auto}.chat-main{min-height:calc(100dvh - 150px)}
 }
 @media(max-width:600px){
-  .main-content{padding:4px 12px calc(90px + env(safe-area-inset-bottom))}.page-title{margin:20px 0 22px;padding-bottom:16px}.page-title h1{font-size:38px}.page-title .button{width:100%}
-  .hero{min-height:460px;padding:25px 20px}.hero h1{font-size:48px}.hero p{font-size:14px}.hero-foot{left:20px;right:20px;bottom:22px}.continue-card{min-height:0}
+  .main-content{padding:4px 12px calc(90px + env(safe-area-inset-bottom))}.page-title{margin:20px 0 22px;padding-bottom:16px}.page-title h1{font-size:34px;line-height:1.05}.page-title .button{width:100%}
+  .hero{min-height:460px;padding:25px 20px}.hero h1{font-size:42px;line-height:.98}.hero p{font-size:14px}.hero-foot{left:20px;right:20px;bottom:22px}.continue-card{min-height:0}
   .creation-strip{display:grid}.creation-cta{min-height:116px}.character-grid{gap:10px}.character-card{border-radius:18px}.character-card h3{font-size:18px}
   .create-primary{grid-template-columns:1fr}.create-option{min-height:320px;padding:24px}.create-persona{align-items:flex-start}.conversation-cards{grid-template-columns:1fr}.conversation-cards>a{grid-template-columns:auto minmax(0,1fr) auto;min-height:118px;padding:16px;column-gap:12px}.conversation-cards>a>.portrait{width:50px;height:50px}.conversation-cards>a>span:not(.portrait){grid-column:2;grid-row:2;justify-self:start;font-size:11px}.conversation-cards>a>svg{grid-column:3;grid-row:1/3}
   .form-main,.panel{padding:20px}.character-detail{padding:20px;gap:22px}.world-detail-hero{padding:28px 22px;min-height:320px}.tag-editor input{flex:1;max-width:none}
