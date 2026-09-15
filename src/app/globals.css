@@ -95,6 +95,12 @@ button:focus,button:focus-visible{outline:none!important}
 button{-webkit-tap-highlight-color:transparent}
 a:focus,a:focus-visible,button:focus,button:focus-visible{outline:none!important;box-shadow:none!important;-webkit-tap-highlight-color:transparent;-webkit-focus-ring-color:transparent}
 @media (hover:none){nav a:hover:not(.active){background:transparent;color:#726b7f}html[data-theme='dark'] nav a:hover:not(.active){background:transparent;color:var(--muted)}}
+@media (hover:none),(pointer:coarse){
+ .button:hover,.filter:hover,.language-toggle:hover,.icon-button:hover,.round-arrow:hover,.scene-choices button:hover,.avatar-options button:hover,.scene-faces button:hover,.import-list button:hover{transform:none;box-shadow:none}
+ .create-option:hover,.creation-cta:hover,.character-card:hover,.world-card:hover,.world-invitation:hover{transform:none;box-shadow:none}
+ nav a:hover:not(.active){background:transparent;color:#726b7f;transform:none}
+ html[data-theme='dark'] nav a:hover:not(.active){background:transparent;color:var(--muted)}
+}
 .ambient{background:radial-gradient(circle at 85% 0,#ffe3ea 0,transparent 28rem),radial-gradient(circle at 0 60%,#e5f2f5 0,transparent 32rem),var(--paper)}
 nav a:hover,nav a.active{background:#ffe5eb;color:var(--purple-dark)}
 .sidebar-story{background:linear-gradient(145deg,#d96887,#f2a8ba)}
