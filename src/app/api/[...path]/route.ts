@@ -133,6 +133,15 @@ async function handle(req: NextRequest, ctx: Context) {
     await db().prepare("UPDATE users SET age_range=?,age_verified=1 WHERE id=?").run(range, user.id);
     return json({ ok: true, age_range: range, age_verified: true });
   }
+  if ((path[0] === "characters" || path[0] === "worlds") && path[1] && path[2] === "publish" && method === "POST") {
+    if (!user) fail("Sign in is required.", 401);
+    const table = path[0] === "characters" ? "characters" : "worlds";
+    const item = await get<Character | World>(table, path[1], user.id);
+    if (!item || item.owner_id !== user.id) fail("You can only publish your own content.", 403);
+    const published = (await body(req)).published !== false;
+    await db().prepare(`UPDATE ${table} SET data=? WHERE id=? AND owner_id=?`).run(JSON.stringify({ ...item, published }), path[1], user.id);
+    return json({ ok: true, published });
+  }
   if (path[0] === "users" && path[1] && method === "GET") {
     const profile = await db().prepare("SELECT id,name,picture FROM users WHERE id=?").get(path[1]);
     if (!profile) fail("User not found.", 404);
