@@ -1,4 +1,4 @@
-export type Entity = { id: string; owner_id: string | null; name: string; description: string; created_at: string; creator_name?: string | null; creator_picture?: string | null };
+export type Entity = { id: string; owner_id: string | null; name: string; description: string; created_at: string; published?: boolean; creator_name?: string | null; creator_picture?: string | null };
 export type Character = Entity & { avatar: string; personality: string; backstory: string; speaking_style: string; likes: string; dislikes: string; relationship_behavior: string; greeting: string; example_dialogue: string; lore: string; world_id: string | null; scenario_id: string | null; faction: string; tags: string[]; avatar_id: string | null };
 export type World = Entity & { lore: string; rules: string; locations: string; factions: string; power_system: string; timeline: string; world_state: string; genre: string; cover: string };
 export type Persona = Entity & { world_id: string | null; species: string; role: string; rank: string; faction: string; abilities: string; appearance: string; backstory: string; personality: string; public_facts: string; secret_facts: string };
