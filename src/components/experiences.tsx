@@ -22,6 +22,7 @@ import {
   MapPin,
   Brain,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import type {
   Bootstrap,
@@ -638,6 +639,8 @@ export function Chat({
   const { text, language } = useLanguage();
   const router = useRouter(),
     [chat, setChat] = useState<ChatData | null>(null),
+    [editingMemory, setEditingMemory] = useState<string | null>(null),
+    [editingContent, setEditingContent] = useState(""),
     [message, setMessage] = useState(""),
     [pendingMessage, setPendingMessage] = useState<{
       id: string;
@@ -707,6 +710,17 @@ export function Chat({
     } catch (e) {
       setError((e as Error).message);
     }
+  }
+  async function updateMemory(memoryId: string) {
+    if (!editingContent.trim()) return;
+    try {
+      setChat(await api<ChatData>(`conversations/${id}/memories/${memoryId}`, "PATCH", { content: editingContent }));
+      setEditingMemory(null);
+    } catch (e) { setError((e as Error).message); }
+  }
+  async function deleteMemory(memoryId: string) {
+    try { setChat(await api<ChatData>(`conversations/${id}/memories/${memoryId}`, "DELETE")); }
+    catch (e) { setError((e as Error).message); }
   }
   if (!chat)
     return (
@@ -1052,7 +1066,10 @@ export function Chat({
                       <UsersRound size={13} />
                     )}
                   </div>
-                  <p>{m.content}</p>
+                  {editingMemory === m.id ? (
+                    <div className="memory-edit"><textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)} maxLength={1000} /><div><button className="button" type="button" onClick={() => updateMemory(m.id)}>{text("Save", "บันทึก")}</button><button className="text-link" type="button" onClick={() => setEditingMemory(null)}>{text("Cancel", "ยกเลิก")}</button></div></div>
+                  ) : <p>{m.content}</p>}
+                  {editingMemory !== m.id && <div className="memory-actions"><button type="button" aria-label={text("Edit memory", "แก้ไขความทรงจำ")} onClick={() => { setEditingMemory(m.id); setEditingContent(m.content); }}><Pencil size={13}/></button><button type="button" aria-label={text("Delete memory", "ลบความทรงจำ")} onClick={() => deleteMemory(m.id)}><Trash2 size={13}/></button></div>}
                   <small>
                     {m.known_by.includes(data.user?.id || "")
                       ? text("Only you", "มีเพียงคุณที่รู้")
