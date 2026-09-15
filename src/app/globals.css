@@ -118,3 +118,9 @@ html[data-theme='dark'] .brand:before{background-color:#fff}
 @media (hover:hover) and (pointer:fine){
  :where(a,button,input,textarea,select,summary):focus-visible{outline:3px solid rgba(109,76,161,.45)!important;outline-offset:3px;box-shadow:none!important}
 }
+
+/* Keep scenario labels legible over artwork in either theme. */
+.world-card .card-badge{top:14px;left:14px;display:inline-flex;align-items:center;min-height:26px;padding:5px 10px;background:rgba(255,244,248,.94);color:#8b2745;line-height:1.1;box-shadow:0 2px 10px rgba(17,12,18,.18)}
+html[data-theme='dark'] .world-card .card-badge{background:rgba(38,23,30,.92);color:#ffc1d0;border:1px solid rgba(255,193,208,.24)}
+html[data-theme='dark'] .world-invitation{background:#2b2025;border-color:#714653;color:#ffc1d0}
+html[data-theme='dark'] .world-invitation p{color:#e4c2cb}
