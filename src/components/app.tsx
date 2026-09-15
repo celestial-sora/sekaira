@@ -826,8 +826,44 @@ function Navigation({
 
 function Home({ data }: { data: Bootstrap }) {
   const { text: t } = useLanguage();
+  const [category, setCategory] = useState("All");
   const world = data.worlds.find((w) => w.id === "aetheria") || data.worlds[0];
   const continuation = data.conversations[0];
+  const categories = [
+    "All",
+    "Yuri",
+    "Yaoi / BL",
+    "GL",
+    "Romance",
+    "Slow Burn",
+    "Enemies to Lovers",
+    "Friends to Lovers",
+    "Tsundere",
+    "Yandere",
+    "Kuudere",
+    "Dandere",
+    "Himedere",
+    "Oujidere",
+    "Genki",
+    "Fluffy",
+    "Angst",
+    "Drama",
+    "Comedy",
+    "Slice of Life",
+    "Fantasy",
+    "Mystery",
+    "School Life",
+  ];
+  const recommendedCharacters = [...data.characters]
+    .filter(
+      (character) =>
+        category === "All" ||
+        character.tags.some(
+          (tag) => tag.toLocaleLowerCase() === category.toLocaleLowerCase(),
+        ),
+    )
+    .sort((a, b) => Number(a.avatar) - Number(b.avatar))
+    .slice(0, 5);
   const recommendations = (
     <section className="recommendations">
       <SectionTitle href="/characters">
@@ -839,24 +875,53 @@ function Home({ data }: { data: Bootstrap }) {
           )}
         </span>
       </SectionTitle>
-      <div className="character-grid home-characters">
-        {[...data.characters]
-          .sort((a, b) => Number(a.avatar) - Number(b.avatar))
-          .slice(0, 5)
-          .map((c) => (
-            <CharacterCard key={c.id} character={c} />
-          ))}
+      <div
+        className="recommendation-filters"
+        role="group"
+        aria-label={t("Filter recommended characters", "กรองตัวละครแนะนำ")}
+      >
+        {categories.map((item) => {
+          const selected = category === item;
+          return (
+            <button
+              type="button"
+              key={item}
+              className={selected ? "selected" : undefined}
+              aria-pressed={selected}
+              onClick={() => setCategory(item)}
+            >
+              {item === "All" ? t("All", "ทั้งหมด") : item}
+            </button>
+          );
+        })}
       </div>
-      {!data.characters.length && (
+      <div className="character-grid home-characters">
+        {recommendedCharacters.map((c) => (
+          <CharacterCard key={c.id} character={c} />
+        ))}
+      </div>
+      {!recommendedCharacters.length && (
         <Empty
-          title={t("Create the first character", "สร้างตัวละครคนแรก")}
+          title={
+            data.characters.length
+              ? t(
+                  "No characters in this category yet",
+                  "ยังไม่มีตัวละครในหมวดหมู่นี้",
+                )
+              : t("Create the first character", "สร้างตัวละครคนแรก")
+          }
           href="/characters/new"
           label={t("Create Character", "สร้างตัวละคร")}
         >
-          {t(
-            "Give someone a voice, then start chatting right away.",
-            "มอบเสียงให้ใครสักคน แล้วเริ่มแชตได้ทันที",
-          )}
+          {data.characters.length
+            ? t(
+                "Create one with this category, or choose another filter.",
+                "สร้างตัวละครในหมวดนี้ หรือเลือกหมวดอื่น",
+              )
+            : t(
+                "Give someone a voice, then start chatting right away.",
+                "มอบเสียงให้ใครสักคน แล้วเริ่มแชตได้ทันที",
+              )}
         </Empty>
       )}
     </section>
