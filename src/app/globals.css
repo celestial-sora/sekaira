@@ -94,3 +94,4 @@ html[data-theme='dark'] .language-toggle{background:#251f2f;color:var(--purple);
 button:focus,button:focus-visible{outline:none!important}
 button{-webkit-tap-highlight-color:transparent}
 a:focus,a:focus-visible,button:focus,button:focus-visible{outline:none!important;box-shadow:none!important;-webkit-tap-highlight-color:transparent;-webkit-focus-ring-color:transparent}
+@media (hover:none){nav a:hover:not(.active){background:transparent;color:#726b7f}html[data-theme='dark'] nav a:hover:not(.active){background:transparent;color:var(--muted)}}
