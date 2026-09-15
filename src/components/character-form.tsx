@@ -43,6 +43,23 @@ const emptyDraft: CharacterDraft = {
   greeting: "",
   example_dialogue: "",
 };
+const categoryGroups = [
+  {
+    title: "Relationship & romance",
+    thaiTitle: "ความสัมพันธ์และโรแมนซ์",
+    options: ["Yuri", "Yaoi / BL", "GL", "Romance", "Slow Burn", "Enemies to Lovers", "Friends to Lovers", "Love Triangle"],
+  },
+  {
+    title: "Character archetypes",
+    thaiTitle: "อาร์คีไทป์ตัวละคร",
+    options: ["Tsundere", "Yandere", "Kuudere", "Dandere", "Himedere", "Oujidere", "Genki", "Reserved"],
+  },
+  {
+    title: "Story mood",
+    thaiTitle: "โทนเรื่อง",
+    options: ["Fluffy", "Angst", "Drama", "Comedy", "Slice of Life", "Fantasy", "Mystery", "School Life"],
+  },
+] as const;
 
 function Field({
   name,
@@ -112,6 +129,29 @@ export function CharacterForm({
     key: K,
     value: CharacterDraft[K],
   ) => setDraft((current) => ({ ...current, [key]: value }));
+  const selectedTags = draft.tags
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+  function toggleCategory(tag: string) {
+    const selected = selectedTags.some(
+      (item) => item.toLocaleLowerCase() === tag.toLocaleLowerCase(),
+    );
+    if (!selected && selectedTags.length >= 8) {
+      setError(text("Choose up to 8 tags.", "เลือกแท็กได้สูงสุด 8 แท็ก"));
+      return;
+    }
+    setError("");
+    update(
+      "tags",
+      (selected
+        ? selectedTags.filter(
+            (item) => item.toLocaleLowerCase() !== tag.toLocaleLowerCase(),
+          )
+        : [...selectedTags, tag]
+      ).join(", "),
+    );
+  }
 
   async function generate() {
     if (!aiPrompt.trim() || generating) return;
@@ -348,6 +388,28 @@ export function CharacterForm({
                 "คั่นแต่ละแท็กด้วยเครื่องหมายจุลภาค — เพิ่มหรือแก้ไขทีหลังได้",
               )}
             />
+            <section className="category-picker wide" aria-label={text("Character categories", "หมวดหมู่ตัวละคร")}>
+              <div className="category-picker-heading">
+                <div>
+                  <span>{text("Choose categories", "เลือกหมวดหมู่")}</span>
+                  <p>{text("Optional — select what fits, then refine it anytime.", "ไม่บังคับ — เลือกเฉพาะที่ใช่ แล้วค่อยแก้ทีหลังได้")}</p>
+                </div>
+                <small>{selectedTags.length}/8</small>
+              </div>
+              <div className="category-groups">
+                {categoryGroups.map((group) => (
+                  <div className="category-group" key={group.title}>
+                    <strong>{text(group.title, group.thaiTitle)}</strong>
+                    <div className="category-chips">
+                      {group.options.map((tag) => {
+                        const selected = selectedTags.some((item) => item.toLocaleLowerCase() === tag.toLocaleLowerCase());
+                        return <button type="button" key={tag} className={selected ? "selected" : undefined} aria-pressed={selected} onClick={() => toggleCategory(tag)}>{selected && <Check size={13} />}{tag}</button>;
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
             <Field
               name="description"
               label={text("Description", "คำอธิบาย")}
