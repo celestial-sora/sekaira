@@ -368,7 +368,7 @@ export function WorldDetail({
         <div className="tags">
           <span>
             <Globe2 size={14} />
-            {text("Open-ended scenario", "ซีนาริโอแบบเปิดกว้าง")}
+            {text("Open-ended scenario", "เรื่องที่เล่นได้อย่างอิสระ")}
           </span>
           <span>
             <UsersRound size={14} />
@@ -385,7 +385,7 @@ export function WorldDetail({
             <div className="world-setup">
               <div className="setup-number">1</div>
               <div className="setup-field">
-                <h3>{text("Choose your persona", "เลือกเพอร์โซนาของคุณ")}</h3>
+                <h3>{text("Choose your persona", "เลือกตัวตนของคุณ")}</h3>
                 <p>
                   {text("Who will you be in", "คุณจะเป็นใครใน")} {world.name}?
                 </p>
@@ -489,7 +489,7 @@ export function WorldDetail({
                 disabled={busy || !persona || !selected.length || !data.user}
                 onClick={start}
               >
-                {text("Begin Roleplay", "เริ่มสวมบทบาท")}
+                {text("Begin Roleplay", "เริ่มเล่นเรื่องนี้")}
                 <ArrowRight size={17} />
               </button>
             </div>
@@ -805,7 +805,7 @@ export function Chat({
                     {m.role === "user"
                       ? userLabel
                       : m.role === "director"
-                        ? text("Scenario Director", "ผู้กำกับซีนาริโอ")
+                        ? text("Scenario Director", "ผู้กำกับเรื่อง")
                         : c?.name}
                     {m.role === "assistant" && (
                       <small>{localizedLabel(m.emotion)}</small>
@@ -872,7 +872,7 @@ export function Chat({
           {chat.world && (
             <div className="speaker-picker">
               <label htmlFor="speaker">
-                {text("Next response", "ผู้ตอบคนถัดไป")}
+                {text("Next response", "ให้ใครตอบต่อ")}
               </label>
               <select
                 id="speaker"
@@ -899,7 +899,7 @@ export function Chat({
               aria-label={text("Your message", "ข้อความของคุณ")}
               placeholder={
                 chat.world
-                  ? text("What do you say or do?", "คุณจะพูดหรือทำอะไร?")
+                  ? text("What do you say or do?", "จะพูดหรือทำอะไรดี?")
                   : text(
                       "Say something, or start a story…",
                       "พูดอะไรสักอย่าง หรือเริ่มต้นเรื่องราว…",
@@ -947,7 +947,7 @@ export function Chat({
             className={tab === "scene" ? "active" : ""}
             onClick={() => setTab("scene")}
           >
-            {text("Presence", "ตัวละคร")}
+            {text("Presence", "คนในเรื่อง")}
           </button>
           <button
             className={tab === "memory" ? "active" : ""}
@@ -1123,7 +1123,7 @@ export function Chat({
                   "ซีนาริโอของคุณกำลังรอบทแรก",
                 )}
             </p>
-            <h3>{text("Scenario events", "เหตุการณ์ในซีนาริโอ")}</h3>
+            <h3>{text("Scenario events", "เหตุการณ์ในเรื่อง")}</h3>
             {state.events?.length ? (
               state.events.map(
                 (e: { content: string; at: string }, i: number) => (
