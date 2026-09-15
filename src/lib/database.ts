@@ -22,7 +22,9 @@ function connectionString(){
  return configured||'';
 }
 export function hasPostgres(){return /^postgres(?:ql)?:\/\//i.test(connectionString());}
-function postgres(){return pool??=new Pool({connectionString:connectionString(),max:3,idleTimeoutMillis:20000,connectionTimeoutMillis:15000,ssl:{rejectUnauthorized:false}});}
+// Keep one client per serverless instance; the hosted Postgres session pool is capped
+// and parallel lambdas must not exhaust it during bootstrap.
+function postgres(){return pool??=new Pool({connectionString:connectionString(),max:1,idleTimeoutMillis:10000,connectionTimeoutMillis:10000,allowExitOnIdle:true,ssl:{rejectUnauthorized:false}});}
 function sqlite(){if(!local){const path=process.env.DATABASE_PATH||'./data/sekaira.sqlite';if(path!==':memory:')mkdirSync(dirname(path),{recursive:true});local=new DatabaseSync(path);local.exec(readFileSync('src/lib/schema.sql','utf8'));}return local;}
 // Keep the same parameterized repository queries for PostgreSQL and local SQLite.
 export function postgresSQL(sql:string){
