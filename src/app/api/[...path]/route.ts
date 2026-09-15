@@ -126,6 +126,15 @@ async function handle(req: NextRequest, ctx: Context) {
       fail("Request origin not allowed.", 403);
   }
   const user = await currentUser();
+  if (path[0] === "users" && path[1] && method === "GET") {
+    const profile = await db().prepare("SELECT id,name,picture FROM users WHERE id=?").get(path[1]);
+    if (!profile) fail("User not found.", 404);
+    const [characters, worlds] = await Promise.all([
+      list<Character>("characters", user?.id || null),
+      list<World>("worlds", user?.id || null),
+    ]);
+    return json({ user: profile, characters: characters.filter(c => c.owner_id === path[1]), worlds: worlds.filter(w => w.owner_id === path[1]) });
+  }
   if (path[0] === "admin") {
     if (!user || !isAdmin(user)) fail("Admin access required.", 403);
     if (method === "GET" && path[1] === "users") {
