@@ -1,6 +1,6 @@
 PRAGMA foreign_keys = ON;
 PRAGMA journal_mode = WAL;
-CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, google_sub TEXT UNIQUE, name TEXT NOT NULL, picture TEXT, guest INTEGER NOT NULL DEFAULT 0 CHECK(guest IN (0,1)));
+CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, google_sub TEXT UNIQUE, email TEXT, name TEXT NOT NULL, picture TEXT, guest INTEGER NOT NULL DEFAULT 0 CHECK(guest IN (0,1)), admin INTEGER NOT NULL DEFAULT 0 CHECK(admin IN (0,1)));
 CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS session_expiry ON sessions(expires_at);
 CREATE TABLE IF NOT EXISTS worlds (id TEXT PRIMARY KEY, owner_id TEXT REFERENCES users(id), data TEXT NOT NULL);
