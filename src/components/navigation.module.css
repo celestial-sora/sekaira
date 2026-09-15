@@ -12,7 +12,8 @@
 .account .username{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .account>svg{flex:none}
 .searchDot{position:absolute;right:8px;top:7px;width:7px;height:7px;border-radius:50%;background:var(--purple-dark)}
-.searchPanel,.morePanel{position:absolute;top:calc(100% + 8px);right:0;border:1px solid var(--line);border-radius:24px;background:var(--paper);box-shadow:0 12px 36px #24182026}
+.searchPanel,.morePanel{position:absolute;top:calc(100% + 8px);right:0;border:1px solid var(--line);border-radius:24px;background:var(--paper);box-shadow:0 12px 36px #24182026;transform-origin:top right;animation:nav-pop .34s cubic-bezier(.22,1,.36,1) both}
+@keyframes nav-pop{from{opacity:0;transform:translateY(-8px) scale(.97);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
 .searchPanel{display:flex;align-items:center;gap:12px;width:min(560px,100%);padding:8px 12px 8px 20px}
 .searchPanel input{min-width:0;width:100%;min-height:44px;background:transparent;border:0;color:var(--ink);font-size:16px}
 .morePanel{width:min(330px,100%);padding:12px;max-height:calc(100dvh - 170px);overflow-y:auto;overscroll-behavior:contain}
@@ -26,3 +27,4 @@
 @media(hover:hover){.primary a:hover,.secondary a:hover,.icon:hover{background:var(--lavender);color:var(--purple-dark)}.account:hover{box-shadow:0 0 0 3px var(--line)}}
 @media(max-width:900px){.header{width:calc(100% - 24px);margin:12px auto 16px}.bar{gap:6px}.primary a{padding-inline:10px;font-size:13px}.primary a>svg{display:none}.account{max-width:160px}}
 @media(max-width:680px){.header{width:calc(100% - 20px);margin:10px auto 14px}.bar{display:grid;grid-template-columns:48px minmax(0,1fr);border-radius:28px;padding:8px;gap:6px}.actions{justify-content:flex-end}.account{max-width:min(210px,calc(100vw - 184px));margin-left:4px}.account>svg{display:none}.primary{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);padding-top:6px}.primary a{flex-direction:column;gap:4px;min-height:52px;padding:5px 2px;border-radius:18px;font-size:11px}.primary a>svg{display:block}.morePanel{max-height:calc(100dvh - 190px - env(safe-area-inset-top))}}
+@media(prefers-reduced-motion:reduce){.searchPanel,.morePanel{animation:none}}
