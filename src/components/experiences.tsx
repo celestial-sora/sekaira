@@ -38,6 +38,7 @@ import {
   SectionTitle,
   ErrorNote,
   Empty,
+  displayTag,
 } from "./shared";
 import { useLanguage } from "./i18n";
 function AvatarLoading() {
@@ -62,7 +63,7 @@ export function CharacterDetail({
   canEdit?: boolean;
   onUpdate?: () => Promise<Bootstrap>;
 }) {
-  const { text } = useLanguage();
+  const { text, language } = useLanguage();
   const [busy, setBusy] = useState(false);
   const [tags, setTags] = useState(c?.tags ?? []);
   const [tagInput, setTagInput] = useState("");
@@ -87,9 +88,13 @@ export function CharacterDetail({
     setTagBusy(true);
     setTagError("");
     try {
-      const updated = await api<Character>(`characters/${character.id}`, "PATCH", {
-        tags: nextTags,
-      });
+      const updated = await api<Character>(
+        `characters/${character.id}`,
+        "PATCH",
+        {
+          tags: nextTags,
+        },
+      );
       setTags(updated.tags);
       await onUpdate?.();
     } catch (error) {
@@ -143,7 +148,7 @@ export function CharacterDetail({
           <div className="tags">
             {tags.map((t) => (
               <span key={t} className={canEdit ? "editable-tag" : undefined}>
-                {t}
+                {displayTag(t, language === "th")}
                 {canEdit && (
                   <button
                     type="button"
