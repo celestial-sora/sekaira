@@ -92,3 +92,4 @@ html[data-theme='dark'] .language-toggle{background:#251f2f;color:var(--purple);
 .reduce-effects *,.reduce-effects *:before,.reduce-effects *:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 @media(prefers-reduced-transparency:reduce){.glass{backdrop-filter:none;background:rgba(255,255,255,.96)}html[data-theme='dark'] .glass{background:rgba(31,25,41,.97)}}
 button:focus,button:focus-visible{outline:none!important}
+button{-webkit-tap-highlight-color:transparent}
