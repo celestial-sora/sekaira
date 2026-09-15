@@ -74,6 +74,7 @@ export default function App() {
     [theme, setTheme] = useState<"light" | "dark">("light"),
     [reducedEffects, setReducedEffects] = useState(false),
     [ageVerified, setAgeVerified] = useState<boolean | null>(null),
+    [ageRange, setAgeRange] = useState<"general" | "mature" | null>(null),
     [ageInput, setAgeInput] = useState(""),
     [ageError, setAgeError] = useState("");
   const refresh = useCallback(async () => {
@@ -98,7 +99,9 @@ export default function App() {
   }, []);
   useEffect(() => {
     const saved = localStorage.getItem("oonchai-age-verified");
-    setAgeVerified(saved === "true");
+    const range = localStorage.getItem("oonchai-age-range");
+    setAgeRange(range === "mature" || range === "general" ? range : null);
+    setAgeVerified(saved === "true" && Boolean(range));
   }, []);
   useEffect(() => {
     setSearch("");
@@ -583,12 +586,12 @@ export default function App() {
   return (
     <LanguageProvider language={lang}>
       <>
-        {ageVerified === null ? null : !ageVerified && <div className="age-gate" role="dialog" aria-modal="true" aria-labelledby="age-gate-title"><div className="age-gate-card"><span className="eyebrow">OONCHAI</span><h2 id="age-gate-title">{t("Enter your age", "กรอกอายุของคุณ")}</h2><p>{t("You must be 18 or older to enter.", "คุณต้องมีอายุ 18 ปีขึ้นไปจึงจะเข้าใช้งานได้")}</p><label className="age-field"><span>{t("ENTER YOUR AGE", "กรอกอายุ")}</span><input autoFocus type="number" inputMode="numeric" min="1" max="120" value={ageInput} onChange={(e) => { setAgeInput(e.target.value); setAgeError(""); }} placeholder="18" /></label>{ageError && <p className="age-error">{ageError}</p>}<button className="button primary age-submit" type="button" onClick={() => { const age = Number(ageInput); if (!ageInput || !Number.isFinite(age) || age < 18) { setAgeError(t("You must be 18 or older to continue.", "ต้องมีอายุ 18 ปีขึ้นไปจึงจะใช้งานต่อได้")); return; } localStorage.setItem("oonchai-age-verified", "true"); setAgeVerified(true); }}>{t("Continue", "เข้าใช้งาน")}</button></div></div>}
+        {ageVerified === null ? null : !ageVerified && <div className="age-gate" role="dialog" aria-modal="true" aria-labelledby="age-gate-title"><div className="age-gate-card"><span className="eyebrow">OONCHAI</span><h2 id="age-gate-title">{t("Enter your age", "กรอกอายุของคุณ")}</h2><p>{t("We’ll show the experience that fits your age range.", "เราจะปรับประสบการณ์ให้เหมาะกับช่วงอายุของคุณ")}</p><label className="age-field"><span>{t("ENTER YOUR AGE", "กรอกอายุ")}</span><input autoFocus type="number" inputMode="numeric" min="1" max="120" value={ageInput} onChange={(e) => { setAgeInput(e.target.value); setAgeError(""); }} placeholder="18" /></label>{ageError && <p className="age-error">{ageError}</p>}<button className="button primary age-submit" type="button" onClick={() => { const age = Number(ageInput); if (!ageInput || !Number.isFinite(age) || age < 1 || age > 120) { setAgeError(t("Enter a valid age.", "กรุณากรอกอายุให้ถูกต้อง")); return; } const range = age >= 18 ? "mature" : "general"; localStorage.setItem("oonchai-age-verified", "true"); localStorage.setItem("oonchai-age-range", range); setAgeRange(range); setAgeVerified(true); }}>{t("Continue", "เข้าใช้งาน")}</button></div></div>}
         <a className="skip-link" href="#main-content">
           {t("Skip to content", "ข้ามไปยังเนื้อหา")}
         </a>
         <div className="ambient" />
-        <div className="app-shell">
+        <div className="app-shell" data-age-range={ageRange || undefined}>
           <div className="workspace">
             <Navigation
               key={path}
