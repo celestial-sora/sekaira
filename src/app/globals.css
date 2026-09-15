@@ -91,9 +91,8 @@ html[data-theme='dark'] .language-toggle{background:#251f2f;color:var(--purple);
 }
 .reduce-effects *,.reduce-effects *:before,.reduce-effects *:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 @media(prefers-reduced-transparency:reduce){.glass{backdrop-filter:none;background:rgba(255,255,255,.96)}html[data-theme='dark'] .glass{background:rgba(31,25,41,.97)}}
-button:focus,button:focus-visible{outline:none!important}
-button{-webkit-tap-highlight-color:transparent}
-a:focus,a:focus-visible,button:focus,button:focus-visible{outline:none!important;box-shadow:none!important;-webkit-tap-highlight-color:transparent;-webkit-focus-ring-color:transparent}
+button:focus{outline:none}
+a,button{-webkit-tap-highlight-color:transparent;-webkit-focus-ring-color:transparent}
 @media (hover:none){nav a:hover:not(.active){background:transparent;color:#726b7f}html[data-theme='dark'] nav a:hover:not(.active){background:transparent;color:var(--muted)}}
 @media (hover:none),(pointer:coarse){
  .button:hover,.filter:hover,.language-toggle:hover,.icon-button:hover,.round-arrow:hover,.scene-choices button:hover,.avatar-options button:hover,.scene-faces button:hover,.import-list button:hover{transform:none;box-shadow:none}
@@ -112,5 +111,10 @@ html[data-theme='dark'] .ambient{background:radial-gradient(circle at 85% 0,#422
 html[data-theme='dark'] nav a:hover,html[data-theme='dark'] nav a.active{background:#3b2730;color:var(--purple-dark)}
 html[data-theme='dark'] .hero{background:linear-gradient(120deg,rgba(45,34,39,.9),rgba(80,40,53,.72)),url('/art/aetheria.png') center/cover}
 .brand>svg{display:none}
-.brand:before{content:'';display:block;width:46px;height:46px;flex:none;border-radius:12px;background:#fff url('/oonchai-icon.png') center/contain no-repeat;box-shadow:0 4px 12px rgba(74,45,56,.12)}
+.brand:before{content:'';display:block;width:46px;height:46px;flex:none;border-radius:12px;background:#fff url('/favicon.svg') center/contain no-repeat;box-shadow:0 4px 12px rgba(74,45,56,.12)}
 html[data-theme='dark'] .brand:before{background-color:#fff}
+
+/* Touch interaction stays clean; keyboard navigation retains a visible target. */
+@media (hover:hover) and (pointer:fine){
+ :where(a,button,input,textarea,select,summary):focus-visible{outline:3px solid rgba(109,76,161,.45)!important;outline-offset:3px;box-shadow:none!important}
+}
