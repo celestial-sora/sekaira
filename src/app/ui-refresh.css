@@ -58,6 +58,7 @@ body{background-image:none}
 @media(hover:hover){.button:hover,.filter:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(74,48,58,.12)}.button.primary:hover{background:var(--purple-dark);border-color:var(--purple-dark)}.character-card:hover,.world-card:hover,.creation-cta:hover,.conversation-cards>a:hover{transform:translateY(-5px);box-shadow:0 24px 46px rgba(74,48,58,.16);border-color:color-mix(in srgb,var(--purple) 35%,var(--line))}}
 
 .hero-grid{grid-template-columns:minmax(0,1.7fr) minmax(290px,.72fr);gap:18px}
+.community-badge{position:absolute;top:11px;right:11px;padding:5px 8px;border-radius:99px;background:rgba(255,239,246,.92);color:#a34e71;font-size:10px;font-weight:700;z-index:2}.creator-credit{display:block;margin-top:3px;color:rgba(255,255,255,.82);font-size:10px;text-decoration:none}.creator-credit:hover{text-decoration:underline}.world-card .creator-credit{color:rgba(255,255,255,.84);margin:2px 0 5px}
 .hero{position:relative;min-height:480px;padding:clamp(28px,4vw,58px);overflow:hidden;background-color:#f8e8ed;background-image:url('/art/aetheria.png');background-position:center;background-size:cover;background-blend-mode:screen}
 .hero:after{background:transparent}
 .hero-copy,.hero-foot{position:relative;z-index:1}
