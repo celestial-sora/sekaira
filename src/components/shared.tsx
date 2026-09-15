@@ -125,9 +125,19 @@ export function CharacterCard({ character: c }: { character: Character }) {
           ? text("Scenario character", "ตัวละครในซีนาริโอ")
           : text("Standalone", "ตัวละครเดี่ยว")}
       </span>
+      {c.owner_id && (
+        <span className="community-badge">
+          {text("Community", "คอมมูนิตี้")}
+        </span>
+      )}
       <div className="character-caption">
         <div>
           <h3>{c.name}</h3>
+          {c.owner_id && c.creator_name && (
+            <a className="creator-credit" href={`/characters?creator=${c.owner_id}`} onClick={(e) => e.stopPropagation()}>
+              {text("by", "โดย")} {c.creator_name}
+            </a>
+          )}
           <div className="tags">
             {c.tags.slice(0, 2).map((t) => (
               <span key={t}>{displayTag(t, language === "th")}</span>
@@ -150,9 +160,19 @@ export function WorldCard({ world: w }: { world: World }) {
           ? text("Your scenario", "ซีนาริโอของคุณ")
           : text("Original scenario", "ซีนาริโอต้นฉบับ")}
       </span>
+      {w.owner_id && (
+        <span className="community-badge">
+          {text("Community", "คอมมูนิตี้")}
+        </span>
+      )}
       <div>
         <small>{displayTag(w.genre, language === "th")}</small>
         <h3>{w.name}</h3>
+        {w.owner_id && w.creator_name && (
+          <a className="creator-credit" href={`/worlds?creator=${w.owner_id}`} onClick={(e) => e.stopPropagation()}>
+            {text("by", "โดย")} {w.creator_name}
+          </a>
+        )}
         <p>{w.description}</p>
       </div>
       <span className="round-arrow">
