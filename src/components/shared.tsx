@@ -134,7 +134,7 @@ export function CharacterCard({ character: c }: { character: Character }) {
         <div>
           <h3>{c.name}</h3>
           {c.owner_id && c.creator_name && (
-            <a className="creator-credit" href={`/characters?creator=${c.owner_id}`} onClick={(e) => e.stopPropagation()}>
+            <a className="creator-credit" href={`/profile/${c.owner_id}`} onClick={(e) => e.stopPropagation()}>
               {text("by", "โดย")} {c.creator_name}
             </a>
           )}
@@ -169,7 +169,7 @@ export function WorldCard({ world: w }: { world: World }) {
         <small>{displayTag(w.genre, language === "th")}</small>
         <h3>{w.name}</h3>
         {w.owner_id && w.creator_name && (
-          <a className="creator-credit" href={`/worlds?creator=${w.owner_id}`} onClick={(e) => e.stopPropagation()}>
+          <a className="creator-credit" href={`/profile/${w.owner_id}`} onClick={(e) => e.stopPropagation()}>
             {text("by", "โดย")} {w.creator_name}
           </a>
         )}
