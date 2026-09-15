@@ -34,6 +34,8 @@ export async function ensureDatabase() {
   for (const statement of [
     "ALTER TABLE users ADD COLUMN email TEXT",
     "ALTER TABLE users ADD COLUMN admin INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN age_range TEXT NOT NULL DEFAULT 'general'",
+    "ALTER TABLE users ADD COLUMN age_verified INTEGER NOT NULL DEFAULT 1",
   ]) {
     try { await db().prepare(statement).run(); } catch { /* already migrated */ }
   }
