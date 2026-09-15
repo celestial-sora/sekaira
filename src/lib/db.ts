@@ -46,10 +46,10 @@ export async function list<T>(
   return (
     await db()
       .prepare(
-        `SELECT data FROM ${tables[table]} WHERE owner_id IS NULL OR owner_id = ? ORDER BY rowid DESC`,
+        `SELECT data, owner_id, users.name AS creator_name, users.picture AS creator_picture FROM ${tables[table]} LEFT JOIN users ON users.id = ${tables[table]}.owner_id WHERE ${tables[table]}.owner_id IS NULL OR ${tables[table]}.owner_id = ? ORDER BY ${tables[table]}.id DESC`,
       )
       .all(userId)
-  ).map((r) => JSON.parse(r.data as string));
+  ).map((r) => ({ ...JSON.parse(r.data as string), creator_name: r.creator_name ?? null, creator_picture: r.creator_picture ?? null }));
 }
 export async function get<T>(
   table: keyof typeof tables,
