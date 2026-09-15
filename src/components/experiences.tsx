@@ -54,12 +54,21 @@ type Refresh = () => Promise<Bootstrap>;
 export function CharacterDetail({
   character: c,
   onChat,
+  canEdit = false,
+  onUpdate,
 }: {
   character?: Character;
   onChat: (c: Character) => Promise<void>;
+  canEdit?: boolean;
+  onUpdate?: () => Promise<Bootstrap>;
 }) {
   const { text } = useLanguage();
   const [busy, setBusy] = useState(false);
+  const [tags, setTags] = useState(c?.tags ?? []);
+  const [tagInput, setTagInput] = useState("");
+  const [tagBusy, setTagBusy] = useState(false);
+  const [tagError, setTagError] = useState("");
+  useEffect(() => setTags(c?.tags ?? []), [c]);
   if (!c)
     return (
       <Empty
@@ -73,6 +82,43 @@ export function CharacterDetail({
         )}
       </Empty>
     );
+  const character = c;
+  async function saveTags(nextTags: string[]) {
+    setTagBusy(true);
+    setTagError("");
+    try {
+      const updated = await api<Character>(`characters/${character.id}`, "PATCH", {
+        tags: nextTags,
+      });
+      setTags(updated.tags);
+      await onUpdate?.();
+    } catch (error) {
+      setTagError(
+        error instanceof Error
+          ? error.message
+          : text("Unable to save tags.", "บันทึกแท็กไม่สำเร็จ"),
+      );
+    } finally {
+      setTagBusy(false);
+    }
+  }
+  function addTag(event: FormEvent) {
+    event.preventDefault();
+    const tag = tagInput.trim();
+    if (!tag) return;
+    if (
+      tags.some((item) => item.toLocaleLowerCase() === tag.toLocaleLowerCase())
+    ) {
+      setTagError(text("That tag is already here.", "มีแท็กนี้อยู่แล้ว"));
+      return;
+    }
+    if (tags.length >= 8) {
+      setTagError(text("Use up to 8 tags.", "เพิ่มได้สูงสุด 8 แท็ก"));
+      return;
+    }
+    setTagInput("");
+    void saveTags([...tags, tag]);
+  }
   return (
     <>
       <Link href="/characters" className="back-link">
@@ -95,11 +141,45 @@ export function CharacterDetail({
           </span>
           <h1>{c.name}</h1>
           <div className="tags">
-            {c.tags.map((t) => (
-              <span key={t}>{t}</span>
+            {tags.map((t) => (
+              <span key={t} className={canEdit ? "editable-tag" : undefined}>
+                {t}
+                {canEdit && (
+                  <button
+                    type="button"
+                    aria-label={text(`Remove ${t}`, `ลบ ${t}`)}
+                    disabled={tagBusy}
+                    onClick={() =>
+                      void saveTags(tags.filter((tag) => tag !== t))
+                    }
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
             ))}
             <span>{text("Chat directly", "แชตโดยตรง")}</span>
           </div>
+          {canEdit && (
+            <form className="tag-editor" onSubmit={addTag}>
+              <input
+                value={tagInput}
+                onChange={(event) => setTagInput(event.target.value)}
+                maxLength={30}
+                placeholder={text("Add a tag", "เพิ่มแท็ก")}
+                aria-label={text("Add a tag", "เพิ่มแท็ก")}
+              />
+              <button
+                className="button"
+                type="submit"
+                disabled={tagBusy || !tagInput.trim()}
+              >
+                <Plus size={15} />
+                {text("Add tag", "เพิ่มแท็ก")}
+              </button>
+              {tagError && <span role="alert">{tagError}</span>}
+            </form>
+          )}
           <p className="detail-description">{c.description}</p>
           <blockquote>
             {c.greeting ||
