@@ -31,6 +31,12 @@ export async function ensureDatabase() {
     throw e;
   });
   await initialized;
+  for (const statement of [
+    "ALTER TABLE users ADD COLUMN email TEXT",
+    "ALTER TABLE users ADD COLUMN admin INTEGER NOT NULL DEFAULT 0",
+  ]) {
+    try { await db().prepare(statement).run(); } catch { /* already migrated */ }
+  }
 }
 export const id = () => randomUUID();
 export const now = () => new Date().toISOString();
