@@ -93,3 +93,4 @@ html[data-theme='dark'] .language-toggle{background:#251f2f;color:var(--purple);
 @media(prefers-reduced-transparency:reduce){.glass{backdrop-filter:none;background:rgba(255,255,255,.96)}html[data-theme='dark'] .glass{background:rgba(31,25,41,.97)}}
 button:focus,button:focus-visible{outline:none!important}
 button{-webkit-tap-highlight-color:transparent}
+a:focus,a:focus-visible,button:focus,button:focus-visible{outline:none!important;box-shadow:none!important;-webkit-tap-highlight-color:transparent;-webkit-focus-ring-color:transparent}
