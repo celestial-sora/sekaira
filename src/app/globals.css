@@ -112,5 +112,5 @@ html[data-theme='dark'] .ambient{background:radial-gradient(circle at 85% 0,#422
 html[data-theme='dark'] nav a:hover,html[data-theme='dark'] nav a.active{background:#3b2730;color:var(--purple-dark)}
 html[data-theme='dark'] .hero{background:linear-gradient(120deg,rgba(45,34,39,.9),rgba(80,40,53,.72)),url('/art/aetheria.png') center/cover}
 .brand>svg{display:none}
-.brand:before{content:'';display:block;width:36px;height:36px;flex:none;border-radius:12px;background:#fff url('/oonchai-icon.png') center 18%/250% auto no-repeat;box-shadow:0 4px 12px rgba(74,45,56,.12)}
+.brand:before{content:'';display:block;width:46px;height:46px;flex:none;border-radius:12px;background:#fff url('/oonchai-icon.png') center/contain no-repeat;box-shadow:0 4px 12px rgba(74,45,56,.12)}
 html[data-theme='dark'] .brand:before{background-color:#fff}
