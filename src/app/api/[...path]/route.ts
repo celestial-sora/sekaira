@@ -412,6 +412,19 @@ async function handle(req: NextRequest, ctx: Context) {
         );
       return json(await chatData(conv, owner));
     }
+    if (path[2] === "memories" && path[3]) {
+      const memory = await db().prepare("SELECT id FROM memories WHERE id=? AND conversation_id=? AND owner_id=?").get(path[3], conv.id, owner);
+      if (!memory) fail("Memory not found.", 404);
+      if (method === "PATCH") {
+        const input = z.object({ content: z.string().trim().min(1).max(1000) }).parse(await body(req));
+        await db().prepare("UPDATE memories SET content=? WHERE id=? AND conversation_id=? AND owner_id=?").run(input.content, path[3], conv.id, owner);
+        return json(await chatData(conv, owner));
+      }
+      if (method === "DELETE") {
+        await db().prepare("DELETE FROM memories WHERE id=? AND conversation_id=? AND owner_id=?").run(path[3], conv.id, owner);
+        return json(await chatData(conv, owner));
+      }
+    }
     if (method === "DELETE" && path.length === 2) {
       await db()
         .prepare("DELETE FROM conversations WHERE id=? AND owner_id=?")
