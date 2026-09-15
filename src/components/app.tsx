@@ -958,10 +958,10 @@ function Home({ data }: { data: Bootstrap }) {
           <span className="tiny-star">✦</span>{" "}
           {t(
             "A little curiosity. A whole new story.",
-            "ความอยากรู้นิดเดียว จุดเริ่มต้นของเรื่องราวใหม่",
+            "แค่อยากรู้นิดเดียว ก็เปิดเรื่องใหม่ได้แล้ว",
           )}
         </span>
-        <span>{t("YOUR STORY AWAITS", "เรื่องราวของคุณกำลังรออยู่")}</span>
+        <span>{t("YOUR STORY AWAITS", "เรื่องของคุณรออยู่")}</span>
       </div>
       {recommendations}
       <div className="hero-grid">
