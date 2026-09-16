@@ -19,12 +19,20 @@ export type StructuredRelationship={
  note:string;
 };
 
+type RelationshipLike={
+ affinity?:number|null;
+ trust?:number|null;
+ familiarity?:number|null;
+ mood?:string|null;
+ note?:string|null;
+};
+
 const STEP:Record<RelationshipIntensity,number>={small:1,medium:2,large:3};
 const MOODS=new Set<RelationshipMood>(['idle','happy','shy','angry','sad','surprised']);
 
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value));}
 
-export function normalizeRelationship(value:Partial<StructuredRelationship>|null|undefined):StructuredRelationship{
+export function normalizeRelationship(value:RelationshipLike|null|undefined):StructuredRelationship{
  return {
   affinity:clamp(Number(value?.affinity)||0,-100,100),
   trust:clamp(Number(value?.trust)||0,-100,100),
@@ -34,7 +42,7 @@ export function normalizeRelationship(value:Partial<StructuredRelationship>|null
  };
 }
 
-export function applyRelationshipEvents(current:Partial<StructuredRelationship>|null|undefined,events:RelationshipEvent[]):StructuredRelationship{
+export function applyRelationshipEvents(current:RelationshipLike|null|undefined,events:RelationshipEvent[]):StructuredRelationship{
  const next=normalizeRelationship(current);
  for(const event of events){
   const signed=STEP[event.intensity]*(event.direction==='gain'?1:-1);
