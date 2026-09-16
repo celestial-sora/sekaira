@@ -10,7 +10,7 @@ type FailureCategory = "network" | "schema" | "database";
 function category(error: unknown): FailureCategory {
   const message = error instanceof Error ? error.message : String(error);
   if (/ENOTFOUND|ECONN|timeout|certificate|max clients/i.test(message)) return "network";
-  if (/does not exist|undefined column|relation .* does not exist|json_extract|schema/i.test(message)) return "schema";
+  if (/does not exist|undefined column|relation .* does not exist|no such (?:table|column)|json_extract|schema/i.test(message)) return "schema";
   return "database";
 }
 
