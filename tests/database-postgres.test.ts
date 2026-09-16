@@ -28,3 +28,12 @@ test('PostgreSQL visibility queries use boolean published predicates',()=>{
  assert.match(convertedDetail,/id = \$1/);
  assert.match(convertedDetail,/owner_id = \$2/);
 });
+
+test('PostgreSQL message ordering does not use SQLite rowid',()=>{
+ const sql="SELECT * FROM messages WHERE conversation_id=? ORDER BY rowid";
+ const converted=postgresSQL(sql);
+ assert.match(converted,/FROM sekaira\.messages/);
+ assert.match(converted,/ORDER BY created_at/);
+ assert.doesNotMatch(converted,/rowid/);
+ assert.match(converted,/conversation_id=\$1/);
+});
