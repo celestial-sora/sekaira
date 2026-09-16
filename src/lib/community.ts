@@ -57,7 +57,7 @@ export async function setPublished(table: CommunityTable, entityId: string, owne
   const row = await db().prepare(`SELECT data FROM ${table} WHERE id=? AND owner_id=?`).get(entityId, ownerId);
   if (!row) return false;
   const data = { ...JSON.parse(row.data as string), published };
-  const storedPublished = hasPostgres() ? published : published ? 1 : 0;
+  const storedPublished = hasPostgres() ? (published ? "true" : "false") : published ? 1 : 0;
   const result = await db().prepare(`UPDATE ${table} SET published=?, data=? WHERE id=? AND owner_id=?`).run(storedPublished, JSON.stringify(data), entityId, ownerId);
   return result.changes === 1;
 }
