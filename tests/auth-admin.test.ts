@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {isAdmin} from '../src/lib/auth';
+import {configuredAdmin,isAdmin} from '../src/lib/auth';
 
 const env=process.env as Record<string,string|undefined>;
 
@@ -14,8 +14,10 @@ test('production admin access fails closed without ADMIN_EMAILS',()=>{
  try{
   env.NODE_ENV='production';
   delete env.ADMIN_EMAILS;
+  assert.equal(configuredAdmin('suphloeksangko@gmail.com'),false);
   assert.equal(isAdmin({admin:true,email:'admin@example.test'}),false);
   env.ADMIN_EMAILS='admin@example.test';
+  assert.equal(configuredAdmin('ADMIN@example.test'),true);
   assert.equal(isAdmin({admin:false,email:'admin@example.test'}),true);
   assert.equal(isAdmin({admin:true,email:'other@example.test'}),false);
  }finally{
