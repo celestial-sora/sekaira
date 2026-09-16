@@ -82,7 +82,6 @@ export async function DELETE(req: NextRequest, ctx: Context) {
         .prepare("DELETE FROM scene_characters WHERE scene_id IN (SELECT id FROM scenes WHERE conversation_id=?)")
         .run(conv.id);
       await db().prepare("DELETE FROM scenes WHERE conversation_id=?").run(conv.id);
-      await db().prepare("DELETE FROM relationships WHERE owner_id=? AND scope=?").run(user.id, scope(conv));
       const result = await db().prepare("DELETE FROM conversations WHERE id=? AND owner_id=?").run(conv.id, user.id);
       if (result.changes !== 1) throw new Error("Conversation deletion did not complete.");
     });

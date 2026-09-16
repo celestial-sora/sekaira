@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {AppError,groq} from '../src/lib/engine';
-import {characterGenerationRequestSchema,characterGenerationSchema} from '../src/lib/validation';
+import {characterGenerationRequestSchema,characterGenerationSchema,characterIntentSchema} from '../src/lib/validation';
 
 const generatedCharacter={
  name:'Mali',
@@ -27,6 +27,26 @@ test('character generation request trims the brief and enforces safe size limits
  assert.deepEqual(characterGenerationRequestSchema.parse({prompt:'  Create a reserved forest guardian  '}),{prompt:'Create a reserved forest guardian'});
  assert.equal(characterGenerationRequestSchema.safeParse({prompt:'too short'}).success,false);
  assert.equal(characterGenerationRequestSchema.safeParse({prompt:'x'.repeat(2001)}).success,false);
+});
+
+test('intent contract preserves must-haves, intensity, voice and behavioral triggers',()=>{
+ const intent=characterIntentSchema.parse({
+  core_concept:'A possessive Southern Thai childhood friend',
+  must_keep:['childhood friend','Southern Thai voice'],
+  archetypes:['yandere'],
+  intensity:'strong',
+  relationship_dynamic:'Already close and afraid of being replaced.',
+  voice:'Southern Thai regional speech with casual slang.',
+  setting:'Modern Thailand',
+  mood:'intimate tension',
+  triggers:['user gives another person unusual attention'],
+  boundaries:['not randomly violent'],
+  contradictions:['caring but controlling'],
+ });
+ assert.equal(intent.intensity,'strong');
+ assert.deepEqual(intent.must_keep,['childhood friend','Southern Thai voice']);
+ assert.match(intent.voice,/Southern Thai/);
+ assert.equal(characterIntentSchema.safeParse({...intent,intensity:'maximum'}).success,false);
 });
 
 test('generated character contract requires usable fields and bounded tags',()=>{
