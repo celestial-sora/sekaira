@@ -4,6 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {db,createCharacter,createPersona,createWorld,startConversation,conversation,list,get,DatabaseContextError} from '../src/lib/db';
+import {setPublished} from '../src/lib/community';
 import type {Character} from '../src/lib/types';
 import {parseOAuthState,matchesOAuthState,googleProfileSchema} from '../src/lib/auth';
 
@@ -44,7 +45,7 @@ test('closed beta backend flows',async t=>{
   await t.test('published community characters are visible cross-account while private characters stay private',async()=>{
     const published=await createCharacter('owner-a',characterInput('Community Character'));
     const privateCharacter=await createCharacter('owner-a',characterInput('Private Character'));
-    await db().prepare('UPDATE characters SET data=? WHERE id=? AND owner_id=?').run(JSON.stringify({...published,published:true}),published.id,'owner-a');
+    assert.equal(await setPublished('characters',published.id,'owner-a',true),true);
 
     const visibleToB=await list<Character>('characters','owner-b');
     const shared=visibleToB.find(character=>character.id===published.id);
