@@ -30,6 +30,7 @@ test('natural speech policy scopes regional dialect to the specific character wh
  assert.match(NATURAL_SPEECH_RULES,/Regional or local dialect is character-owned, not user-owned/i);
  assert.match(NATURAL_SPEECH_RULES,/user's dialect by itself is never permission/i);
  assert.match(NATURAL_SPEECH_RULES,/If the character has no explicit regional variety/i);
+ assert.match(NATURAL_SPEECH_RULES,/same character-only dialect rule applies to rewrites and retries/i);
  assert.match(NATURAL_SPEECH_RULES,/Isan\/Lao-influenced Thai/);
  assert.match(NATURAL_SPEECH_RULES,/Southern Thai/);
  assert.match(NATURAL_SPEECH_RULES,/Northern Thai/);
