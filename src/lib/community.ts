@@ -6,7 +6,7 @@ type CommunityEntity = Character | World;
 
 export async function listCommunity<T extends CommunityEntity>(table: CommunityTable, userId: string | null): Promise<T[]> {
   const rows = await db().prepare(
-    `SELECT ${table}.data, ${table}.published, ${table}.owner_id, users.name AS creator_name, users.picture AS creator_picture FROM ${table} LEFT JOIN users ON users.id = ${table}.owner_id WHERE ${table}.owner_id IS NULL OR ${table}.owner_id = ? OR ${table}.published = 1 ORDER BY ${table}.id DESC`,
+    `SELECT ${table}.data, ${table}.published, ${table}.owner_id, users.name AS creator_name, users.picture AS creator_picture FROM ${table} LEFT JOIN users ON users.id = ${table}.owner_id WHERE ${table}.owner_id IS NULL OR ${table}.owner_id = ? OR ${table}.published ORDER BY ${table}.id DESC`,
   ).all(userId);
   return rows.map((row) => ({
     ...JSON.parse(row.data as string),
@@ -18,7 +18,7 @@ export async function listCommunity<T extends CommunityEntity>(table: CommunityT
 
 export async function getCommunity<T extends CommunityEntity>(table: CommunityTable, entityId: string, userId: string | null): Promise<T | null> {
   const row = await db().prepare(
-    `SELECT data, published FROM ${table} WHERE id = ? AND (owner_id IS NULL OR owner_id = ? OR published = 1)`,
+    `SELECT data, published FROM ${table} WHERE id = ? AND (owner_id IS NULL OR owner_id = ? OR published)`,
   ).get(entityId, userId);
   return row ? ({ ...JSON.parse(row.data as string), published: Boolean(row.published) } as T) : null;
 }
