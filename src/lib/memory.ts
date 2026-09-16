@@ -16,12 +16,18 @@ export function memoryVisibility(memory:Memory):MemoryVisibility{
  return memory.world_id?'world':'character';
 }
 
-export function canCharacterRecall(memory:Memory,conversation:Conversation,characterId:string):boolean{
- if(memory.owner_id!==conversation.owner_id||!memory.known_by.includes(characterId))return false;
+export function memoryBelongsToConversationScope(memory:Memory,conversation:Conversation):boolean{
+ if(memory.owner_id!==conversation.owner_id)return false;
  if(conversation.world_id){
-  return memoryVisibility(memory)==='world'&&memory.world_id===conversation.world_id&&memory.persona_id===conversation.persona_id;
+  return memory.world_id===conversation.world_id&&memory.persona_id===conversation.persona_id;
  }
- return memoryVisibility(memory)==='character'&&!memory.world_id&&memory.character_id===characterId;
+ return !memory.world_id&&memory.character_id===conversation.character_ids[0];
+}
+
+export function canCharacterRecall(memory:Memory,conversation:Conversation,characterId:string):boolean{
+ if(!memoryBelongsToConversationScope(memory,conversation)||!memory.known_by.includes(characterId))return false;
+ if(conversation.world_id)return memoryVisibility(memory)==='world';
+ return memoryVisibility(memory)==='character';
 }
 
 export function memoryRecipients(characterIds:Iterable<string>):string[]{

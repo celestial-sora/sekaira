@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {canCharacterRecall,memoryRecipients,retrieveCharacterMemories} from '../src/lib/memory';
+import {canCharacterRecall,memoryBelongsToConversationScope,memoryRecipients,retrieveCharacterMemories} from '../src/lib/memory';
 import type {Conversation,Memory} from '../src/lib/types';
 
 const baseConversation=(overrides:Partial<Conversation>={}):Conversation=>({
@@ -27,6 +27,20 @@ test('private memories and cross-owner memories never enter character retrieval'
   const otherOwner=memory({owner_id:'owner-2',world_id:null,persona_id:null,character_id:'char-present',known_by:['char-present'],content:'Other owner note'});
   assert.equal(canCharacterRecall(privateMemory,conversation,'char-present'),false);
   assert.deepEqual(retrieveCharacterMemories([privateMemory,publicMemory,otherOwner],conversation,'char-present','shared').map(item=>item.content),['Shared note']);
+});
+
+test('memory management follows character scope instead of source conversation id',()=>{
+  const conversation=baseConversation({id:'conversation-new',world_id:null,persona_id:null,character_ids:['char-present']});
+  const earlierMemory=memory({conversation_id:'conversation-old',world_id:null,persona_id:null,character_id:'char-present',known_by:[]});
+  assert.equal(memoryBelongsToConversationScope(earlierMemory,conversation),true);
+  assert.equal(memoryBelongsToConversationScope({...earlierMemory,character_id:'other-character'},conversation),false);
+});
+
+test('memory management keeps world persona timelines isolated',()=>{
+  const conversation=baseConversation({id:'conversation-new'});
+  assert.equal(memoryBelongsToConversationScope(memory({conversation_id:'conversation-old'}),conversation),true);
+  assert.equal(memoryBelongsToConversationScope(memory({persona_id:'persona-2'}),conversation),false);
+  assert.equal(memoryBelongsToConversationScope(memory({world_id:'world-2'}),conversation),false);
 });
 
 test('memory recipients are unique and exclude empty ids',()=>{
