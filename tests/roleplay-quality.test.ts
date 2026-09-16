@@ -25,10 +25,14 @@ test('style samples isolate the user voice and keep the latest regional/slang co
  ]);
 });
 
-test('natural speech policy preserves character identity while allowing dialect, slang, and code switching',()=>{
+test('natural speech policy scopes regional dialect to the specific character while still allowing slang adaptation',()=>{
  assert.match(NATURAL_SPEECH_RULES,/character's own speaking_style/i);
+ assert.match(NATURAL_SPEECH_RULES,/Regional or local dialect is character-owned, not user-owned/i);
+ assert.match(NATURAL_SPEECH_RULES,/user's dialect by itself is never permission/i);
+ assert.match(NATURAL_SPEECH_RULES,/If the character has no explicit regional variety/i);
  assert.match(NATURAL_SPEECH_RULES,/Isan\/Lao-influenced Thai/);
  assert.match(NATURAL_SPEECH_RULES,/Southern Thai/);
+ assert.match(NATURAL_SPEECH_RULES,/Northern Thai/);
  assert.match(NATURAL_SPEECH_RULES,/Slang, memes, abbreviations/i);
  assert.match(NATURAL_SPEECH_RULES,/Code-switch/i);
  assert.match(NATURAL_SPEECH_RULES,/Character identity wins over blind mirroring/i);
