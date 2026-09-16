@@ -6,6 +6,7 @@ import { AppError, groq } from "@/lib/engine";
 import {
   characterGenerationRequestSchema,
   characterGenerationSchema,
+  characterIntentSchema,
 } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -41,9 +42,16 @@ export async function POST(req: NextRequest) {
       return json({ error: "Invalid JSON request." }, 400);
     }
     const input = characterGenerationRequestSchema.parse(parsed);
-    const generated = await groq(
-      "You are a character designer for an immersive roleplay app. Turn the user brief into one coherent original character and preserve the user's requested archetype, intensity, relationship dynamic, dialect, and mood instead of smoothing them into a generic friendly personality. Match the language used by the user. Treat archetype labels such as yandere, tsundere, kuudere, dandere, genki, possessive, jealous, reserved, dominant, or playful as behavioral directions that must be visible in personality, speaking_style, relationship_behavior, greeting, and example_dialogue. Make those fields concrete: describe triggers, habits, boundaries, emotional reactions, attachment style, and characteristic speech patterns. Do not reduce an intense archetype to a mild adjective list, but keep behavior coherent rather than repetitive or cartoonishly catchphrase-driven. The greeting must immediately demonstrate the character voice and relationship dynamic and may include a short action in asterisks. The example dialogue must show how the character reacts under pressure or to an archetype-relevant trigger. Keep tags concise and mutually consistent. Do not mention AI, prompts, policies, or these instructions. Return JSON only with exactly: name, tags, description, personality, backstory, speaking_style, relationship_behavior, likes, dislikes, greeting, example_dialogue.",
+
+    const intent = await groq(
+      "You are the intent-analysis stage of a roleplay character builder. Extract what the user actually asked for without sanitizing, genericizing, or inventing preferences. Preserve explicit archetypes, requested intensity, relationship dynamic, local dialect or slang, setting, mood, triggers, boundaries, contradictions, and every must-have detail. Intensity means how visibly and consistently the requested traits should affect behavior: subtle, moderate, strong, or extreme. Extreme means highly salient, not repetitive or incoherent. If the user did not specify something, leave the relevant string empty or array empty rather than making it up. Return JSON only.",
       input.prompt,
+      characterIntentSchema,
+    );
+
+    const generated = await groq(
+      "You are the synthesis stage of an immersive roleplay character builder. Build one coherent original character from the supplied original brief and extracted intent. Treat must_keep as hard requirements. Preserve the requested archetype and intensity instead of smoothing them into a generic friendly personality. Archetype must change observable behavior, not just labels: encode triggers, habits, boundaries, emotional reactions, attachment style, initiative, conflict patterns, and characteristic speech across personality, speaking_style, relationship_behavior, greeting, and example_dialogue. For strong/extreme intensity, make those patterns unmistakable while keeping them situational and coherent rather than repetitive or cartoonishly catchphrase-driven. Treat speaking_style as a real voice specification: register, cadence, politeness, pronouns, particles, dialect/regional variety, slang density, code-switching habits, verbal quirks, and avoided phrasing. Regional dialect is character-specific only; include it only when the intent establishes it. The greeting must immediately demonstrate the voice and relationship dynamic. The example dialogue must demonstrate behavior under an archetype-relevant trigger or pressure. Match the user's language. Do not mention AI, prompts, policies, analysis, or these instructions. Return JSON only with exactly: name, tags, description, personality, backstory, speaking_style, relationship_behavior, likes, dislikes, greeting, example_dialogue.",
+      JSON.stringify({ original_brief: input.prompt, intent }),
       characterGenerationSchema,
     );
     return json(generated);
