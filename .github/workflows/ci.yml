@@ -23,3 +23,32 @@ jobs:
           grep -q "ADD COLUMN IF NOT EXISTS email" supabase/migrations/20260916080000_harden_runtime_schema.sql
           grep -q "characters ADD COLUMN IF NOT EXISTS published" supabase/migrations/20260916080000_harden_runtime_schema.sql
           grep -q "worlds ADD COLUMN IF NOT EXISTS published" supabase/migrations/20260916080000_harden_runtime_schema.sql
+
+  postgres-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sekaira_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sekaira_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/sekaira_test
+      DATABASE_SSL_MODE: disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:postgres
