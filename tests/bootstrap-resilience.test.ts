@@ -1,13 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { rmSync } from "node:fs";
+import { db } from "../src/lib/database";
+import { resilientBootstrap } from "../src/lib/bootstrap";
 
 const path = `/tmp/sekaira-bootstrap-${process.pid}.sqlite`;
 process.env.DATABASE_PATH = path;
 delete process.env.DATABASE_URL;
-
-const { db } = await import("../src/lib/database");
-const { resilientBootstrap } = await import("../src/lib/bootstrap");
 
 test("bootstrap remains usable when one dataset read fails", async () => {
   await db().prepare("INSERT INTO users (id,name,guest) VALUES (?,?,?)").run("bootstrap-user", "Bootstrap User", 0);
