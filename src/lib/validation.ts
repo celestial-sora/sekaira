@@ -13,6 +13,19 @@ export const replySchema=z.object({dialogue:z.string().min(1).max(8000),emotion:
 export const directorSchema=z.object({narration:z.string().max(3000),state_summary:z.string().max(4000),event:z.string().max(500).default(''),active_character_ids:z.array(z.string()).max(3)});
 export const extractedSchema=z.object({memories:z.array(z.object({content:z.string().min(1).max(1000),type:z.enum(['fact','promise','relationship','event','discovery']),importance:z.number().min(0).max(1),confidence:z.number().min(0).max(1)})).max(4)});
 export const characterGenerationRequestSchema=z.object({prompt:z.string().trim().min(12,'Describe the character you want in a little more detail.').max(2000)});
+export const characterIntentSchema=z.object({
+ core_concept:z.string().trim().min(1).max(500),
+ must_keep:z.array(z.string().trim().min(1).max(300)).max(12),
+ archetypes:z.array(z.string().trim().min(1).max(80)).max(6),
+ intensity:z.enum(['subtle','moderate','strong','extreme']),
+ relationship_dynamic:z.string().trim().max(500),
+ voice:z.string().trim().max(500),
+ setting:z.string().trim().max(500),
+ mood:z.string().trim().max(300),
+ triggers:z.array(z.string().trim().min(1).max(240)).max(8),
+ boundaries:z.array(z.string().trim().min(1).max(240)).max(8),
+ contradictions:z.array(z.string().trim().min(1).max(240)).max(8),
+});
 export const characterGenerationSchema=z.object({
  name:z.string().trim().min(1).max(100),
  tags:z.array(z.string().trim().min(1).max(30)).min(2).max(5),
