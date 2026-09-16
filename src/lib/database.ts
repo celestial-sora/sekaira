@@ -22,7 +22,14 @@ function connectionString(){
  return configured||'';
 }
 export function hasPostgres(){return /^postgres(?:ql)?:\/\//i.test(connectionString());}
-function postgres(){return pool??=new Pool({connectionString:connectionString(),max:1,idleTimeoutMillis:10000,connectionTimeoutMillis:10000,allowExitOnIdle:true,ssl:{rejectUnauthorized:false}});}
+function postgresSSL(){
+ if(process.env.DATABASE_SSL_MODE?.trim().toLowerCase()==='disable'){
+  if(process.env.NODE_ENV==='production')throw new Error('DATABASE_SSL_MODE=disable is not allowed in production.');
+  return false as const;
+ }
+ return {rejectUnauthorized:false};
+}
+function postgres(){return pool??=new Pool({connectionString:connectionString(),max:1,idleTimeoutMillis:10000,connectionTimeoutMillis:10000,allowExitOnIdle:true,ssl:postgresSSL()});}
 function sqlite(){if(!local){const path=process.env.DATABASE_PATH||'./data/sekaira.sqlite';if(path!==':memory:')mkdirSync(dirname(path),{recursive:true});local=new DatabaseSync(path);local.exec(readFileSync('src/lib/schema.sql','utf8'));}return local;}
 // Keep repository queries portable: translate SQLite-specific syntax to PostgreSQL
 // without introducing bind placeholders. Captured expressions are SQL, not query arguments.
