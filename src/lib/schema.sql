@@ -19,5 +19,5 @@ CREATE TABLE IF NOT EXISTS memories (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL
 CREATE INDEX IF NOT EXISTS memory_scope ON memories(owner_id, world_id, persona_id, character_id);
 CREATE INDEX IF NOT EXISTS message_conversation ON messages(conversation_id, created_at);
 CREATE INDEX IF NOT EXISTS conversation_owner_updated ON conversations(owner_id, updated_at);
-CREATE TABLE IF NOT EXISTS relationships (owner_id TEXT NOT NULL REFERENCES users(id), scope TEXT NOT NULL, character_id TEXT NOT NULL REFERENCES characters(id), trust INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', PRIMARY KEY(owner_id, scope, character_id));
+CREATE TABLE IF NOT EXISTS relationships (owner_id TEXT NOT NULL REFERENCES users(id), scope TEXT NOT NULL, character_id TEXT NOT NULL REFERENCES characters(id), affinity INTEGER NOT NULL DEFAULT 0, trust INTEGER NOT NULL DEFAULT 0, familiarity INTEGER NOT NULL DEFAULT 0, mood TEXT NOT NULL DEFAULT 'idle', note TEXT NOT NULL DEFAULT '', PRIMARY KEY(owner_id, scope, character_id));
 CREATE TABLE IF NOT EXISTS turn_locks (conversation_id TEXT PRIMARY KEY REFERENCES conversations(id) ON DELETE CASCADE, token TEXT NOT NULL, expires_at INTEGER NOT NULL);

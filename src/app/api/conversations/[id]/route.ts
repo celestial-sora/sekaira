@@ -11,6 +11,7 @@ import {
   transaction,
 } from "@/lib/db";
 import { memoryBelongsToConversationScope } from "@/lib/memory";
+import { listRelationshipStates } from "@/lib/relationship-store";
 import type { Character, Conversation, Persona, World } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -31,9 +32,7 @@ async function chatData(conv: Conversation, owner: string) {
     await Promise.all([
       messages(conv.id),
       memories(owner),
-      db()
-        .prepare("SELECT character_id,trust,note FROM relationships WHERE owner_id=? AND scope=?")
-        .all(owner, scope(conv)),
+      listRelationshipStates(owner, scope(conv)),
       Promise.all(conv.character_ids.map((characterId) => get<Character>("characters", characterId, owner))),
       conv.world_id ? get<World>("worlds", conv.world_id, owner) : Promise.resolve(null),
       conv.persona_id ? get<Persona>("personas", conv.persona_id, owner) : Promise.resolve(null),
