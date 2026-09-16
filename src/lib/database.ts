@@ -28,7 +28,10 @@ function postgres(){return pool??=new Pool({connectionString:connectionString(),
 function sqlite(){if(!local){const path=process.env.DATABASE_PATH||'./data/sekaira.sqlite';if(path!==':memory:')mkdirSync(dirname(path),{recursive:true});local=new DatabaseSync(path);local.exec(readFileSync('src/lib/schema.sql','utf8'));}return local;}
 // Keep the same parameterized repository queries for PostgreSQL and local SQLite.
 export function postgresSQL(sql:string){
- let out=sql.replace(/\bIS \?/g,'IS NOT DISTINCT FROM ?').replace(/MAX\(-100,MIN\(100,(?:relationships\.)?trust\+excluded\.trust\)\)/,'GREATEST((-100)::bigint,LEAST((100)::bigint,relationships.trust+excluded.trust))');
+ let out=sql
+  .replace(/\bIS \?/g,'IS NOT DISTINCT FROM ?')
+  .replace(/json_extract\(([^,]+),\s*'\$\.published'\)\s*=\s*1/g,"COALESCE(($1::jsonb ->> 'published')::boolean, false) = true")
+  .replace(/MAX\(-100,MIN\(100,(?:relationships\.)?trust\+excluded\.trust\)\)/,'GREATEST((-100)::bigint,LEAST((100)::bigint,relationships.trust+excluded.trust))');
  if(out.startsWith('INSERT OR IGNORE'))out=out.replace('INSERT OR IGNORE','INSERT')+' ON CONFLICT DO NOTHING';
  const tables=['users','sessions','worlds','scenarios','avatars','characters','world_characters','personas','conversations','scenes','scene_characters','messages','memories','relationships','turn_locks'];
  out=out.replace(/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+(\w+)/g,(m,op,table)=>tables.includes(table)?`${op} sekaira.${table}`:m);

@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {db,createCharacter,createPersona,createWorld,startConversation,conversation,DatabaseContextError} from '../src/lib/db';
+import {db,createCharacter,createPersona,createWorld,startConversation,conversation,list,get,DatabaseContextError} from '../src/lib/db';
+import type {Character} from '../src/lib/types';
 import {parseOAuthState,matchesOAuthState,googleProfileSchema} from '../src/lib/auth';
 
 const testDirectory=mkdtempSync(join(tmpdir(),'oonchai-backend-'));
@@ -38,6 +39,20 @@ test('closed beta backend flows',async t=>{
     );
     const after=(await db().prepare('SELECT id FROM conversations WHERE owner_id=?').all('owner-a')).length;
     assert.equal(after,before);
+  });
+
+  await t.test('published community characters are visible cross-account while private characters stay private',async()=>{
+    const published=await createCharacter('owner-a',characterInput('Community Character'));
+    const privateCharacter=await createCharacter('owner-a',characterInput('Private Character'));
+    await db().prepare('UPDATE characters SET data=? WHERE id=? AND owner_id=?').run(JSON.stringify({...published,published:true}),published.id,'owner-a');
+
+    const visibleToB=await list<Character>('characters','owner-b');
+    const shared=visibleToB.find(character=>character.id===published.id);
+    assert.ok(shared);
+    assert.equal(shared.creator_name,'Owner A');
+    assert.equal(visibleToB.some(character=>character.id===privateCharacter.id),false);
+    assert.equal((await get<Character>('characters',published.id,'owner-b'))?.id,published.id);
+    assert.equal(await get<Character>('characters',privateCharacter.id,'owner-b'),null);
   });
 
   await t.test('requires a persona belonging to the selected world',async()=>{
