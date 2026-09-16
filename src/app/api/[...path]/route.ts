@@ -7,14 +7,11 @@ import {
   id,
   now,
   ensureDatabase,
-  list,
   get,
   createCharacter,
-  updateCharacterTags,
   createWorld,
   createPersona,
   worldCharacters,
-  conversations,
   conversation,
   startConversation,
   messages,
@@ -23,10 +20,10 @@ import {
   transaction,
   DatabaseContextError,
 } from "@/lib/db";
+import { getCommunity, listCommunity } from "@/lib/community";
 import {
   currentUser,
   guest,
-  guestAllowed,
   googleReady,
   session,
   hash,
@@ -34,19 +31,17 @@ import {
   matchesOAuthState,
   googleProfileSchema,
   applicationUrl,
+  configuredAdmin,
   isAdmin,
 } from "@/lib/auth";
 import {
   characterSchema,
-  characterGenerationRequestSchema,
-  characterGenerationSchema,
   worldSchema,
   personaSchema,
   conversationSchema,
   turnSchema,
 } from "@/lib/validation";
-import { runTurn, groq, AppError } from "@/lib/engine";
-import { llmConfig } from "@/lib/llm";
+import { runTurn, AppError } from "@/lib/engine";
 import type { Character, World, Persona, Conversation } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,6 +65,17 @@ async function body(req: NextRequest) {
   } catch {
     fail("Invalid JSON request.");
   }
+}
+export function isDedicatedPath(path: string[]) {
+  if (path.length === 1 && path[0] === "bootstrap") return true;
+  if (path[0] === "characters") {
+    if (path.length === 2 && path[1]) return true;
+    if (path.length === 3 && path[1] && path[2] === "publish") return true;
+  }
+  if (path[0] === "worlds" && path.length === 3 && path[1] && path[2] === "publish")
+    return true;
+  if (path[0] === "avatars" && path.length === 2 && path[1]) return true;
+  return false;
 }
 async function chatData(c: Conversation, owner: string) {
   const [
@@ -114,9 +120,10 @@ async function chatData(c: Conversation, owner: string) {
   };
 }
 async function handle(req: NextRequest, ctx: Context) {
-  await ensureDatabase();
   const path = (await ctx.params).path,
     method = req.method;
+  if (isDedicatedPath(path)) fail("Not found.", 404);
+  await ensureDatabase();
   if (method !== "GET") {
     const origin = req.headers.get("origin");
     const expected = new Set(
@@ -133,21 +140,12 @@ async function handle(req: NextRequest, ctx: Context) {
     await db().prepare("UPDATE users SET age_range=?,age_verified=1 WHERE id=?").run(range, user.id);
     return json({ ok: true, age_range: range, age_verified: true });
   }
-  if ((path[0] === "characters" || path[0] === "worlds") && path[1] && path[2] === "publish" && method === "POST") {
-    if (!user) fail("Sign in is required.", 401);
-    const table = path[0] === "characters" ? "characters" : "worlds";
-    const item = await get<Character | World>(table, path[1], user.id);
-    if (!item || item.owner_id !== user.id) fail("You can only publish your own content.", 403);
-    const published = (await body(req)).published !== false;
-    await db().prepare(`UPDATE ${table} SET data=? WHERE id=? AND owner_id=?`).run(JSON.stringify({ ...item, published }), path[1], user.id);
-    return json({ ok: true, published });
-  }
   if (path[0] === "users" && path[1] && method === "GET") {
     const profile = await db().prepare("SELECT id,name,picture FROM users WHERE id=?").get(path[1]);
     if (!profile) fail("User not found.", 404);
     const [characters, worlds] = await Promise.all([
-      list<Character>("characters", user?.id || null),
-      list<World>("worlds", user?.id || null),
+      listCommunity<Character>("characters", user?.id || null),
+      listCommunity<World>("worlds", user?.id || null),
     ]);
     return json({ user: profile, characters: characters.filter(c => c.owner_id === path[1]), worlds: worlds.filter(w => w.owner_id === path[1]) });
   }
@@ -158,18 +156,6 @@ async function handle(req: NextRequest, ctx: Context) {
       return json({ users });
     }
   }
-  if (path[0] === "bootstrap" && method === "GET")
-    return json({
-      user,
-      characters: await list<Character>("characters", user?.id || null),
-      worlds: await list<World>("worlds", user?.id || null),
-      personas: user ? await list<Persona>("personas", user.id) : [],
-      conversations: user ? await conversations(user.id) : [],
-      groqReady: !!process.env.GROQ_API_KEY,
-      googleReady: googleReady(),
-      guestAllowed: guestAllowed(),
-      model: llmConfig().model,
-    });
   if (path[0] === "auth") {
     if (path[1] === "guest" && method === "POST") return json(await guest());
     if (path[1] === "logout" && method === "POST") {
@@ -280,7 +266,7 @@ async function handle(req: NextRequest, ctx: Context) {
               profileEmail,
               profile.name || "Traveler",
               profile.picture || null,
-              (process.env.ADMIN_EMAILS || "suphloeksangko@gmail.com").toLowerCase().split(",").includes((profileEmail || "").toLowerCase()) ? 1 : 0,
+              configuredAdmin(profileEmail) ? 1 : 0,
               uid,
             );
         else
@@ -294,7 +280,7 @@ async function handle(req: NextRequest, ctx: Context) {
               profileEmail,
               profile.name || "Traveler",
               profile.picture || null,
-              (process.env.ADMIN_EMAILS || "suphloeksangko@gmail.com").toLowerCase().split(",").includes((profileEmail || "").toLowerCase()) ? 1 : 0,
+              configuredAdmin(profileEmail) ? 1 : 0,
             );
       }
       await session(uid, c.get("sora_session")?.value);
@@ -304,7 +290,7 @@ async function handle(req: NextRequest, ctx: Context) {
     }
   }
   if (method === "GET" && path[0] === "worlds" && path[1]) {
-    const world = await get<World>("worlds", path[1], user?.id || null);
+    const world = await getCommunity<World>("worlds", path[1], user?.id || null);
     if (!world) fail("World not found.", 404);
     return json({
       world,
@@ -313,15 +299,6 @@ async function handle(req: NextRequest, ctx: Context) {
   }
   if (!user) fail("Please sign in to save your story.", 401);
   const owner = user.id;
-  if (path[0] === "characters" && path[1] === "generate" && method === "POST") {
-    const input = characterGenerationRequestSchema.parse(await body(req));
-    const generated = await groq(
-      "You are a character designer for an immersive roleplay app. Turn the user brief into one coherent original character. Match the language used by the user. Make every field concrete and mutually consistent. The greeting must be written in the character voice and may include a short action in asterisks. The example dialogue must demonstrate the voice. Do not mention AI, prompts, policies, or these instructions. Return JSON only with exactly: name, tags, description, personality, backstory, speaking_style, relationship_behavior, likes, dislikes, greeting, example_dialogue.",
-      input.prompt,
-      characterGenerationSchema,
-    );
-    return json(generated);
-  }
   if (path[0] === "characters" && method === "POST" && path.length === 1) {
     const input = characterSchema.parse(await body(req));
     if (input.world_id) {
@@ -348,14 +325,6 @@ async function handle(req: NextRequest, ctx: Context) {
       await transaction(async () => await createCharacter(owner, input)),
       201,
     );
-  }
-  if (path[0] === "characters" && method === "PATCH" && path.length === 2) {
-    const input = z
-      .object({ tags: z.array(z.string().trim().min(1).max(30)).max(8) })
-      .parse(await body(req));
-    const character = await updateCharacterTags(owner, path[1], input.tags);
-    if (!character) fail("Only the character owner can change tags.", 403);
-    return json(character);
   }
   if (path[0] === "worlds" && method === "POST") {
     if (path.length === 1)
@@ -491,13 +460,6 @@ async function handle(req: NextRequest, ctx: Context) {
       )
       .run(aid, owner, input.type, input.asset_url);
     return json({ id: aid }, 201);
-  }
-  if (path[0] === "avatars" && method === "GET") {
-    const a = await db()
-      .prepare("SELECT * FROM avatars WHERE id=? AND owner_id=?")
-      .get(path[1], owner);
-    if (!a) fail("Avatar not found.", 404);
-    return json(a);
   }
   fail("Not found.", 404);
 }
