@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { currentUser } from "@/lib/auth";
-import { db, ensureDatabase, transaction } from "@/lib/db";
+import { db, ensureDatabase, transaction, updateCharacterTags } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,12 +15,36 @@ function response(data: unknown, status = 200) {
   });
 }
 
+function originAllowed(req: NextRequest) {
+  const origin = req.headers.get("origin");
+  const expected = new Set([req.nextUrl.origin, process.env.APP_URL].filter(Boolean));
+  return !origin || expected.has(origin);
+}
+
+export async function PATCH(req: NextRequest, ctx: Context) {
+  try {
+    await ensureDatabase();
+    if (!originAllowed(req)) return response({ error: "Request origin not allowed." }, 403);
+    const user = await currentUser();
+    if (!user) return response({ error: "Sign in is required." }, 401);
+
+    const input = z.object({ tags: z.array(z.string().trim().min(1).max(30)).max(8) }).strict().parse(await req.json());
+    const { id } = await ctx.params;
+    const character = await updateCharacterTags(user.id, id, input.tags);
+    if (!character) return response({ error: "Only the character owner can change tags." }, 403);
+    return response(character);
+  } catch (error) {
+    if (error instanceof z.ZodError)
+      return response({ error: error.issues.map((issue) => issue.message).join(" ") }, 400);
+    console.error("character update failed", error);
+    return response({ error: "Unable to update this character right now." }, 500);
+  }
+}
+
 export async function DELETE(req: NextRequest, ctx: Context) {
   try {
     await ensureDatabase();
-    const origin = req.headers.get("origin");
-    const expected = new Set([req.nextUrl.origin, process.env.APP_URL].filter(Boolean));
-    if (origin && !expected.has(origin)) return response({ error: "Request origin not allowed." }, 403);
+    if (!originAllowed(req)) return response({ error: "Request origin not allowed." }, 403);
 
     const user = await currentUser();
     if (!user) return response({ error: "Sign in is required." }, 401);
