@@ -6,8 +6,8 @@ const path = `/tmp/sekaira-community-${process.pid}.sqlite`;
 process.env.DATABASE_PATH = path;
 delete process.env.DATABASE_URL;
 
-const { db } = await import("../src/lib/database.ts");
-const { listCommunity, setPublished } = await import("../src/lib/community.ts");
+const { db } = await import("../src/lib/database");
+const { listCommunity, setPublished } = await import("../src/lib/community");
 
 const character = { id: "char-a", owner_id: "account-a", name: "Public Test Character", description: "visibility regression", personality: "test", greeting: "hello", tags: ["test"], world_id: null, scenario_id: null, avatar: "0", avatar_id: null, published: false, created_at: new Date().toISOString() };
 
