@@ -10,17 +10,19 @@ test('PostgreSQL relationship trust clamp uses unambiguous bigint bounds',()=>{
  assert.doesNotMatch(converted,/MAX\(-100,MIN\(100/);
 });
 
-test('PostgreSQL visibility queries translate SQLite published JSON checks',()=>{
- const listSql="SELECT data FROM characters WHERE owner_id IS NULL OR owner_id = ? OR json_extract(characters.data, '$.published') = 1";
+test('PostgreSQL visibility queries use first-class published columns',()=>{
+ const listSql="SELECT characters.data, characters.published FROM characters WHERE characters.owner_id IS NULL OR characters.owner_id = ? OR characters.published = 1 ORDER BY characters.id DESC";
  const convertedList=postgresSQL(listSql);
  assert.match(convertedList,/FROM sekaira\.characters/);
- assert.match(convertedList,/COALESCE\(\(characters\.data::jsonb ->> 'published'\)::boolean, false\) = true/);
+ assert.match(convertedList,/characters\.published = 1/);
  assert.doesNotMatch(convertedList,/json_extract/);
- assert.match(convertedList,/owner_id = \$1/);
+ assert.match(convertedList,/characters\.owner_id = \$1/);
 
- const detailSql="SELECT data FROM characters WHERE id = ? AND (owner_id IS NULL OR owner_id = ? OR json_extract(data, '$.published') = 1)";
+ const detailSql="SELECT data, published FROM characters WHERE id = ? AND (owner_id IS NULL OR owner_id = ? OR published = 1)";
  const convertedDetail=postgresSQL(detailSql);
- assert.match(convertedDetail,/COALESCE\(\(data::jsonb ->> 'published'\)::boolean, false\) = true/);
+ assert.match(convertedDetail,/FROM sekaira\.characters/);
+ assert.match(convertedDetail,/published = 1/);
+ assert.doesNotMatch(convertedDetail,/json_extract/);
  assert.match(convertedDetail,/id = \$1/);
  assert.match(convertedDetail,/owner_id = \$2/);
 });
