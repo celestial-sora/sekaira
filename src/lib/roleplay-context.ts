@@ -2,6 +2,7 @@ import type {Character,Memory,Message,Persona,Relationship,World} from './types'
 import type {LabeledDialogue} from './roleplay-quality';
 
 export const RECENT_MESSAGE_LIMIT=12;
+export const SUMMARY_BATCH_SIZE=6;
 
 export type ConversationState={
  summary?:string;
@@ -18,15 +19,22 @@ export function parseConversationState(raw:string):ConversationState{
  }catch{return {};}
 }
 
-export function summaryWork(messages:Message[],state:ConversationState,windowSize=RECENT_MESSAGE_LIMIT){
- const target=Math.max(0,messages.length-Math.max(1,windowSize));
+function summarizedCount(messages:Message[],state:ConversationState){
  const previous=Number.isInteger(state.summary_message_count)?Number(state.summary_message_count):0;
- const start=Math.max(0,Math.min(previous,target));
+ return Math.max(0,Math.min(previous,messages.length));
+}
+
+export function summaryWork(messages:Message[],state:ConversationState,windowSize=RECENT_MESSAGE_LIMIT,batchSize=SUMMARY_BATCH_SIZE){
+ const target=Math.max(0,messages.length-Math.max(1,windowSize));
+ const start=Math.min(summarizedCount(messages,state),target);
+ if(target-start<Math.max(1,batchSize))return {messages:[] as Message[],summarizedThrough:start};
  return {messages:messages.slice(start,target),summarizedThrough:target};
 }
 
-export function recentMessages(messages:Message[],windowSize=RECENT_MESSAGE_LIMIT){
- return messages.slice(-Math.max(1,windowSize));
+export function recentMessages(messages:Message[],state:ConversationState,windowSize=RECENT_MESSAGE_LIMIT){
+ const target=Math.max(0,messages.length-Math.max(1,windowSize));
+ const start=Math.min(summarizedCount(messages,state),target);
+ return messages.slice(start);
 }
 
 type ContextArgs={
