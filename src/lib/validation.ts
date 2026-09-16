@@ -39,3 +39,33 @@ export const characterGenerationSchema=z.object({
  greeting:z.string().trim().min(1).max(1200),
  example_dialogue:z.string().trim().min(1).max(1600),
 });
+export const scenarioGenerationRequestSchema=z.object({prompt:z.string().trim().min(12,'Describe the scenario you want in a little more detail.').max(2400)});
+export const scenarioIntentSchema=z.object({
+ core_premise:z.string().trim().min(1).max(600),
+ must_keep:z.array(z.string().trim().min(1).max(320)).max(14),
+ genre:z.string().trim().max(120),
+ setting:z.string().trim().max(600),
+ tone:z.string().trim().max(400),
+ conflict:z.string().trim().max(600),
+ power_or_technology:z.string().trim().max(600),
+ important_locations:z.array(z.string().trim().min(1).max(240)).max(10),
+ factions:z.array(z.string().trim().min(1).max(240)).max(10),
+ rules:z.array(z.string().trim().min(1).max(300)).max(10),
+ timeline:z.string().trim().max(400),
+ starting_state:z.string().trim().max(700),
+ mysteries_or_hooks:z.array(z.string().trim().min(1).max(300)).max(10),
+ boundaries:z.array(z.string().trim().min(1).max(240)).max(8),
+});
+export const scenarioGenerationSchema=z.object({
+ name:z.string().trim().min(1).max(100),
+ description:z.string().trim().min(1).max(1400),
+ lore:z.string().trim().max(2600),
+ rules:z.string().trim().max(1800),
+ locations:z.string().trim().max(1800),
+ factions:z.string().trim().max(1800),
+ power_system:z.string().trim().max(1800),
+ timeline:z.string().trim().max(900),
+ world_state:z.string().trim().max(1800),
+ genre:z.enum(['Fantasy','Isekai','School','Romance','Mystery','Historical','Action','Sci-fi','Original']),
+ cover:z.enum(['sky','forest','night','city','sunset']),
+});
