@@ -10,6 +10,7 @@ import * as worldGenerateRoute from "../src/app/api/worlds/generate/route";
 import * as worldPublishRoute from "../src/app/api/worlds/[id]/publish/route";
 import * as bootstrapRoute from "../src/app/api/bootstrap/route";
 import * as avatarRoute from "../src/app/api/avatars/[id]/route";
+import * as characterArtRoute from "../src/app/api/characters/[id]/art/route";
 
 test("specific API routes export every method used by their client callers", () => {
   assert.equal(typeof characterCreateRoute.POST, "function", "Character create must use a dedicated persistence route");
@@ -21,6 +22,7 @@ test("specific API routes export every method used by their client callers", () 
   assert.equal(typeof worldPublishRoute.POST, "function");
   assert.equal(typeof bootstrapRoute.GET, "function");
   assert.equal(typeof avatarRoute.GET, "function");
+  assert.equal(typeof characterArtRoute.GET, "function");
 });
 
 test("catch-all refuses paths owned by dedicated routes instead of serving stale fallbacks", async () => {
@@ -40,6 +42,7 @@ test("catch-all refuses paths owned by dedicated routes instead of serving stale
     ["http://localhost/api/characters/char-a/publish", ["characters", "char-a", "publish"]],
     ["http://localhost/api/worlds/world-a/publish", ["worlds", "world-a", "publish"]],
     ["http://localhost/api/avatars/avatar-a", ["avatars", "avatar-a"]],
+    ["http://localhost/api/characters/char-a/art", ["characters", "char-a", "art"]],
   ] as const) {
     const response = await catchAllRoute.POST(
       new NextRequest(url, { method: "POST" }),

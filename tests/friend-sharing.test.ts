@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {rmSync} from 'node:fs';
 import {db} from '../src/lib/database';
 import {get,startConversation} from '../src/lib/db';
-import {getVisibleAvatar,listCommunity,setCharacterVisibility,validateShareRecipients} from '../src/lib/community';
+import {characterArtwork,getVisibleAvatar,listCommunity,setCharacterVisibility,validateShareRecipients} from '../src/lib/community';
 import {acceptFriend,listFriends,removeFriend,requestFriend} from '../src/lib/friends';
 import type {Character} from '../src/lib/types';
 
@@ -56,8 +56,16 @@ test('friend approval and character sharing control detail, listing, avatar, and
  await setCharacterVisibility(character.id,'owner','public',[]);
  assert.equal(await visibleTo('stranger'),true);
  assert.ok(await startConversation('stranger',conversationInput));
+ const image=Buffer.from('image for access test');
+ const stored={...character,avatar:`data:image/png;base64,${image.toString('base64')}`,visibility:'public',published:true};
+ await db().prepare('UPDATE characters SET data=? WHERE id=?').run(JSON.stringify(stored),character.id);
+ const listed=(await listCommunity<Character>('characters','stranger')).find(item=>item.id===character.id);
+ assert.equal(listed?.avatar,`/api/characters/${character.id}/art`);
+ assert.deepEqual(Buffer.from((await characterArtwork(character.id,'stranger'))!.bytes),image);
  await setCharacterVisibility(character.id,'owner','private',[]);
  assert.equal(await visibleTo('stranger'),false);
+ assert.equal(await characterArtwork(character.id,'stranger'),null);
+ assert.ok(await characterArtwork(character.id,'owner'));
  assert.ok(await get<Character>('characters',character.id,'owner'));
 });
 
