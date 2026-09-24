@@ -195,7 +195,7 @@ export function CharacterDetail({
           >
             {text("Chat Now", "แชตเลย")}
             <MessageCircle size={18} />
-          </button>{canEdit&&<Link className="button" href={`/characters/${c.id}/settings`}><Settings2 size={17}/>{text('Character settings','ตั้งค่าตัวละคร')}</Link>}</div>
+          </button>{canEdit&&<><Link className="button" href={`/characters/${c.id}/settings`}><Settings2 size={17}/>{text('Character settings','ตั้งค่าตัวละคร')}</Link><Link className="button danger" href={`/characters/${c.id}/settings#delete-character`}><Trash2 size={17}/>{text('Delete character','ลบตัวละคร')}</Link></>}</div>
           <p className="muted">
             {text(
               "A conversation, just the two of you. No persona needed.",
@@ -730,6 +730,38 @@ export function Chat({
         <Link className="text-link" href="/chat">
           {text("All conversations", "บทสนทนาทั้งหมด")}
         </Link>
+      </section>
+    );
+  if (!chat.characters.length)
+    return (
+      <section className="glass panel">
+        <Link className="text-link" href="/chat">
+          <ArrowLeft size={16} />
+          {text("All conversations", "บทสนทนาทั้งหมด")}
+        </Link>
+        <h1>{chat.conversation.name}</h1>
+        <p className="muted">
+          {text(
+            "This character was deleted. You can still read this conversation.",
+            "ตัวละครนี้ถูกลบแล้ว คุณยังเปิดอ่านบทสนทนานี้ได้",
+          )}
+        </p>
+        <div className="chat-messages">
+          {chat.messages.map((item) => (
+            <article key={item.id} className={`message message-${item.role}`}>
+              <div>
+                <div className="message-author">
+                  {item.role === "user"
+                    ? text("You", "คุณ")
+                    : item.role === "director"
+                      ? text("Narrator", "ผู้บรรยาย")
+                      : text("Character", "ตัวละคร")}
+                </div>
+                <div className="message-content">{item.content}</div>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
     );
   const last = chat.messages.filter((m) => m.role === "assistant").at(-1),

@@ -2,7 +2,8 @@
 
 import {useEffect,useState,type FormEvent} from 'react';
 import Link from 'next/link';
-import {ArrowLeft,Save} from 'lucide-react';
+import {useRouter} from 'next/navigation';
+import {ArrowLeft,Save,Trash2} from 'lucide-react';
 import type {Bootstrap,Character,CharacterVisibility} from '@/lib/types';
 import {api,ErrorNote,Portrait} from './shared';
 import {acceptedFriends,type FriendEntry} from './friends-panel';
@@ -19,6 +20,7 @@ function fromCharacter(character:Character):Draft{
 
 export function CharacterSettings({character,refresh}:{character:Character;refresh:()=>Promise<Bootstrap>}){
  const {text}=useLanguage();
+ const router=useRouter();
  const [draft,setDraft]=useState<Draft>(()=>fromCharacter(character));
  const [tags,setTags]=useState(character.tags.join(', '));
  const [visibility,setVisibility]=useState<CharacterVisibility>(character.visibility??(character.published?'public':'private'));
@@ -32,6 +34,11 @@ export function CharacterSettings({character,refresh}:{character:Character;refre
  const [error,setError]=useState('');
  const [sharingError,setSharingError]=useState('');
  const [notice,setNotice]=useState('');
+ const [confirmDelete,setConfirmDelete]=useState(false);
+ const [deleting,setDeleting]=useState(false);
+ useEffect(()=>{
+  if(window.location.hash==='#delete-character')document.getElementById('delete-character')?.scrollIntoView({block:'start'});
+ },[character.id]);
  useEffect(()=>{
   setDraft(fromCharacter(character));setTags(character.tags.join(', '));setSharingReady(false);
   let active=true;
@@ -74,6 +81,15 @@ export function CharacterSettings({character,refresh}:{character:Character;refre
    setNotice(text('Character settings saved. New chat replies will use the updated personality and roleplay guidance.','บันทึกแล้ว คำตอบแชตครั้งต่อไปจะใช้บุคลิกและแนวทางโรลเพลย์ใหม่'));
   }catch(cause){setError((cause as Error).message);}finally{setBusy(false);}
  }
+ async function deleteCharacter(){
+  if(deleting)return;
+  setDeleting(true);setError('');
+  try{
+   await api(`characters/${character.id}`,'DELETE');
+   await refresh().catch(()=>undefined);
+   router.replace('/characters');
+  }catch(cause){setError((cause as Error).message);setDeleting(false);}
+ }
  const selectedChanged=visibility==='selected'&&(visibility!==savedVisibility||[...selected].sort().join('|')!==[...savedSelected].sort().join('|'));
  return <div className="character-settings-page">
   <Link className="back-link" href={`/characters/${character.id}`}><ArrowLeft size={16}/>{text('Back to character','กลับไปหน้าตัวละคร')}</Link>
@@ -84,5 +100,16 @@ export function CharacterSettings({character,refresh}:{character:Character;refre
    <section className="glass panel settings-section"><h2>{text('Roleplay voice and flow','เสียงและจังหวะโรลเพลย์')}</h2><p className="muted">{text('Describe how this character reacts, speaks, and keeps a scene moving.','บอกว่าตัวละครตอบสนอง พูด และพาฉากดำเนินต่ออย่างไร')}</p><div className="settings-fields">{field('speaking_style','Speaking style','สไตล์การพูด')}{field('relationship_behavior','Relationship behavior','พฤติกรรมในความสัมพันธ์')}{field('roleplay_guidance','Roleplay guidance','แนวทางโรลเพลย์',true,text('Example: Keep replies conversational, notice small gestures, and take initiative only when it fits the scene.','เช่น ตอบแบบเป็นบทสนทนา สังเกตท่าทางเล็ก ๆ และเริ่มบทสนทนาเองเมื่อเข้ากับฉาก'))}{field('greeting','Opening greeting','คำทักทายแรก')}{field('example_dialogue','Example dialogue','ตัวอย่างบทสนทนา')}</div></section>
    <div className="settings-save"><ErrorNote message={error}/>{notice&&<p className="notice" role="status">{notice}</p>}<button className="button primary" type="submit" disabled={busy||sharingBusy||!sharingReady}><Save size={17}/>{busy?text('Saving…','กำลังบันทึก…'):text('Save character settings','บันทึกการตั้งค่าตัวละคร')}</button></div>
   </form>
+  <section id="delete-character" className="glass panel settings-section">
+   <h2>{text('Delete character','ลบตัวละคร')}</h2>
+   <p className="muted">{text('This permanently removes the character. Conversations with no remaining characters become read-only.','การลบจะนำตัวละครออกอย่างถาวร บทสนทนาที่ไม่เหลือตัวละครจะเปิดอ่านได้อย่างเดียว')}</p>
+   <button className="button danger" type="button" disabled={busy||sharingBusy||deleting} onClick={()=>setConfirmDelete(true)}><Trash2 size={17}/>{text('Delete character','ลบตัวละคร')}</button>
+  </section>
+  {confirmDelete&&<div className="modal-backdrop"><section className="modal glass" role="dialog" aria-modal="true" aria-labelledby="delete-character-title">
+   <h2 id="delete-character-title">{text(`Delete ${character.name}?`,`ลบ ${character.name} หรือไม่?`)}</h2>
+   <p>{text('This cannot be undone. The character will disappear from your collection and shared pages.','การลบย้อนกลับไม่ได้ ตัวละครจะหายจากรายการของคุณและหน้าที่แชร์ไว้')}</p>
+   <ErrorNote message={error}/>
+   <div className="inline-actions"><button autoFocus className="button" type="button" disabled={deleting} onClick={()=>setConfirmDelete(false)}>{text('Cancel','ยกเลิก')}</button><button className="button danger" type="button" disabled={deleting} onClick={()=>void deleteCharacter()}>{deleting?text('Deleting…','กำลังลบ…'):text('Delete character','ลบตัวละคร')}</button></div>
+  </section></div>}
  </div>;
 }
