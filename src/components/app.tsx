@@ -39,6 +39,7 @@ import { WorldForm, PersonaForm } from "./forms";
 import { CharacterForm } from "./character-form";
 import { CharacterDetail, WorldDetail, Chat } from "./experiences";
 import { LanguageProvider, useLanguage } from "./i18n";
+import { singleFlight } from "@/lib/single-flight";
 const navigation = [
   ["/", "Discover", House],
   ["/chat", "Chat", MessageCircle],
@@ -48,7 +49,6 @@ const navigation = [
   ["/library", "Library", Library],
   ["/account", "Account", UserRound],
 ] as const;
-let startup: Promise<Bootstrap> | null = null;
 async function initialize() {
   let b = await api<Bootstrap>("bootstrap");
   if (!b.user && b.guestAllowed) {
@@ -57,6 +57,7 @@ async function initialize() {
   }
   return b;
 }
+const loadStartup = singleFlight(initialize);
 function AdminPanel() {
   const { text } = useLanguage();
   const [users, setUsers] = useState<Array<{id:string;email?:string;name:string;admin?:boolean}>>([]);
@@ -84,13 +85,11 @@ export default function App() {
   }, []);
   useEffect(() => {
     let active = true;
-    startup ??= initialize();
-    startup
+    loadStartup()
       .then((b) => {
         if (active) setData(b);
       })
       .catch((e) => {
-        startup = null;
         if (active) setError(e.message);
       });
     return () => {
@@ -493,7 +492,6 @@ export default function App() {
                 className="button"
                 onClick={async () => {
                   await api("auth/logout", "POST", {});
-                  startup = null;
                   location.href = "/";
                 }}
               >
@@ -600,7 +598,7 @@ export default function App() {
         <div className="app-shell" data-age-range={ageRange || undefined}>
           <div className="workspace">
             <Navigation
-              key={path}
+              key={`nav:${path}`}
               path={path}
               user={data?.user ?? null}
               lang={lang}
@@ -616,7 +614,7 @@ export default function App() {
             />
             <main
               id="main-content"
-              key={path}
+              key={`main:${path}`}
               className={`main-content ${segments[0] === "chat" && segments[1] ? "chat-page" : ""}`}
               tabIndex={-1}
             >

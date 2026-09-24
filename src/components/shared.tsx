@@ -118,7 +118,8 @@ export function SectionTitle({
 export function CharacterCard({ character: c }: { character: Character }) {
   const { text, language } = useLanguage();
   return (
-    <Link href={`/characters/${c.id}`} className="character-card">
+    <div className="character-card">
+      <Link href={`/characters/${c.id}`} className="card-hit-area" aria-label={text(`View ${c.name}`, `ดู ${c.name}`)} />
       <Portrait avatar={c.avatar} name={c.name} />
       <span className="card-badge">
         {c.world_id
@@ -134,9 +135,9 @@ export function CharacterCard({ character: c }: { character: Character }) {
         <div>
           <h3>{c.name}</h3>
           {c.owner_id && c.creator_name && (
-            <a className="creator-credit" href={`/profile/${c.owner_id}`} onClick={(e) => e.stopPropagation()}>
+            <Link className="creator-credit" href={`/profile/${c.owner_id}`}>
               {text("by", "โดย")} {c.creator_name}
-            </a>
+            </Link>
           )}
           <div className="tags">
             {c.tags.slice(0, 2).map((t) => (
@@ -148,13 +149,14 @@ export function CharacterCard({ character: c }: { character: Character }) {
           <ArrowRight size={17} />
         </span>
       </div>
-    </Link>
+    </div>
   );
 }
 export function WorldCard({ world: w }: { world: World }) {
   const { text, language } = useLanguage();
   return (
-    <Link href={`/worlds/${w.id}`} className={`world-card world-${w.cover}`}>
+    <div className={`world-card world-${w.cover}`}>
+      <Link href={`/worlds/${w.id}`} className="card-hit-area" aria-label={text(`View ${w.name}`, `ดู ${w.name}`)} />
       <span className="card-badge">
         {w.owner_id
           ? text("Your scenario", "ซีนาริโอของคุณ")
@@ -169,16 +171,16 @@ export function WorldCard({ world: w }: { world: World }) {
         <small>{displayTag(w.genre, language === "th")}</small>
         <h3>{w.name}</h3>
         {w.owner_id && w.creator_name && (
-          <a className="creator-credit" href={`/profile/${w.owner_id}`} onClick={(e) => e.stopPropagation()}>
+          <Link className="creator-credit" href={`/profile/${w.owner_id}`}>
             {text("by", "โดย")} {w.creator_name}
-          </a>
+          </Link>
         )}
         <p>{w.description}</p>
       </div>
       <span className="round-arrow">
         <ArrowRight size={17} />
       </span>
-    </Link>
+    </div>
   );
 }
 export function Empty({
