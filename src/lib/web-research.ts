@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {groq} from './engine';
+import type {CharacterReference} from './character-generation';
 
 export const researchPlanSchema=z.object({
  required:z.boolean(),
@@ -28,9 +29,13 @@ export async function tavilySearch(query:string,key=process.env.TAVILY_API_KEY):
  });
 }
 
-export async function researchForGeneration(kind:'character'|'scenario',prompt:string):Promise<ResearchBundle|null>{
+export async function researchForGeneration(kind:'character'|'scenario',prompt:string,reference?:CharacterReference|null):Promise<ResearchBundle|null>{
  if(!process.env.TAVILY_API_KEY)return null;
- const plan=await groq(
+ const plan=reference?{
+  required:true,
+  focus:`Canon identity and defining traits of ${reference.name} from ${reference.work}`,
+  queries:[`${reference.name} ${reference.work} official character profile personality backstory`],
+ }:await groq(
   `You decide whether a ${kind} creation request needs fresh web research. Research only when the user references a named existing character, franchise, historical person/event/era, real-world place/culture whose factual details matter, or explicitly asks for canon/accuracy/current information. Do not research ordinary original characters, generic genres, moods, archetypes, or fictional settings invented by the user. If research is needed, produce 1-3 focused web search queries that identify the exact entity/continuity/version and factual details needed to avoid hallucination. Return JSON only.`,
   prompt,
   researchPlanSchema,

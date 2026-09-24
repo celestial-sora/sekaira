@@ -26,6 +26,8 @@ export const extractedSchema=z.object({
 export const characterGenerationRequestSchema=z.object({prompt:z.string().trim().min(12,'Describe the character you want in a little more detail.').max(2000)});
 export const characterIntentSchema=z.object({
  core_concept:z.string().trim().min(1).max(500),
+ reference_name:z.string().trim().max(100),
+ reference_work:z.string().trim().max(200),
  must_keep:z.array(z.string().trim().min(1).max(300)).max(12),
  archetypes:z.array(z.string().trim().min(1).max(80)).max(6),
  intensity:z.enum(['subtle','moderate','strong','extreme']),
@@ -36,6 +38,10 @@ export const characterIntentSchema=z.object({
  triggers:z.array(z.string().trim().min(1).max(240)).max(8),
  boundaries:z.array(z.string().trim().min(1).max(240)).max(8),
  contradictions:z.array(z.string().trim().min(1).max(240)).max(8),
+});
+export const characterGenerationReviewSchema=z.object({
+ faithful:z.boolean(),
+ issues:z.array(z.string().trim().min(1).max(300)).max(5),
 });
 export const characterGenerationSchema=z.object({
  name:z.string().trim().min(1).max(100),

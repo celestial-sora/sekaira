@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {AppError,groq} from '../src/lib/engine';
 import {characterGenerationRequestSchema,characterGenerationSchema,characterIntentSchema} from '../src/lib/validation';
+import {characterReference,ensureFaithfulReferenceDraft,explicitCharacterReference,matchesRequestedName} from '../src/lib/character-generation';
 
 const generatedCharacter={
  name:'Mali',
@@ -31,7 +32,9 @@ test('character generation request trims the brief and enforces safe size limits
 
 test('intent contract preserves must-haves, intensity, voice and behavioral triggers',()=>{
  const intent=characterIntentSchema.parse({
-  core_concept:'A possessive Southern Thai childhood friend',
+ core_concept:'A possessive Southern Thai childhood friend',
+  reference_name:'',
+  reference_work:'',
   must_keep:['childhood friend','Southern Thai voice'],
   archetypes:['yandere'],
   intensity:'strong',
@@ -47,6 +50,36 @@ test('intent contract preserves must-haves, intensity, voice and behavioral trig
  assert.deepEqual(intent.must_keep,['childhood friend','Southern Thai voice']);
  assert.match(intent.voice,/Southern Thai/);
  assert.equal(characterIntentSchema.safeParse({...intent,intensity:'maximum'}).success,false);
+});
+
+test('explicit named character and work stay anchored to the user brief',()=>{
+ const prompt='อยากให้สร้าง Maomao | The Apothecary Diaries';
+ const intent=characterIntentSchema.parse({
+  core_concept:'A mysterious heroine',reference_name:'',reference_work:'',must_keep:[],archetypes:[],intensity:'moderate',
+  relationship_dynamic:'',voice:'',setting:'',mood:'',triggers:[],boundaries:[],contradictions:[],
+ });
+ assert.deepEqual(explicitCharacterReference(prompt),{name:'Maomao',work:'The Apothecary Diaries'});
+ assert.deepEqual(characterReference(prompt,intent),{name:'Maomao',work:'The Apothecary Diaries'});
+ assert.equal(matchesRequestedName({...generatedCharacter,name:'Mao Mao'},{name:'Maomao',work:'The Apothecary Diaries'}),true);
+ assert.equal(matchesRequestedName(generatedCharacter,{name:'Maomao',work:'The Apothecary Diaries'}),false);
+ assert.equal(explicitCharacterReference('Create a moon librarian'),null);
+});
+
+test('named reference retries a mismatched draft and refuses a second mismatch',async()=>{
+ const reference={name:'Maomao',work:'The Apothecary Diaries'};
+ const corrected={...generatedCharacter,name:'Maomao'};
+ const feedback:string[][]=[];
+ const result=await ensureFaithfulReferenceDraft(
+  generatedCharacter,reference,
+  async issues=>{feedback.push(issues);return corrected;},
+  async draft=>({faithful:draft.name==='Maomao',issues:draft.name==='Maomao'?[]:['This is an unrelated librarian.']}),
+ );
+ assert.deepEqual(result,corrected);
+ assert.match(feedback[0].join(' '),/Name must be exactly Maomao/);
+ await assert.rejects(
+  ensureFaithfulReferenceDraft(generatedCharacter,reference,async()=>generatedCharacter,async()=>({faithful:false,issues:['Wrong identity']})),
+  (error:unknown)=>error instanceof AppError&&error.status===502,
+ );
 });
 
 test('generated character contract requires usable fields and bounded tags',()=>{
