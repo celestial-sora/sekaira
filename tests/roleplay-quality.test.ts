@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {characterBehaviorDirective,collectUserStyleSamples,hasUnexpectedRepetition,labelDialogueHistory,NATURAL_SPEECH_RULES} from '../src/lib/roleplay-quality';
 import type {Character,Message} from '../src/lib/types';
 
-const character=(id:string,name:string,overrides:Partial<Character>={})=>({id,name,owner_id:null,description:'',created_at:'',avatar:'0',personality:'',backstory:'',speaking_style:'',likes:'',dislikes:'',relationship_behavior:'',greeting:'',example_dialogue:'',lore:'',world_id:null,scenario_id:null,faction:'',tags:[],avatar_id:null,...overrides}) satisfies Character;
+const character=(id:string,name:string,overrides:Partial<Character>={})=>({id,name,owner_id:null,description:'',created_at:'',avatar:'0',personality:'',backstory:'',speaking_style:'',likes:'',dislikes:'',relationship_behavior:'',greeting:'',example_dialogue:'',lore:'',world_id:null,scenario_id:null,faction:'',tags:[],...overrides}) satisfies Character;
 const message=(role:Message['role'],content:string,character_id:string|null=null)=>({id:`${role}-${content}`,conversation_id:'conversation',role,character_id,content,emotion:'idle',created_at:''}) satisfies Message;
 
 test('history labels every role so characters cannot confuse speakers',()=>{

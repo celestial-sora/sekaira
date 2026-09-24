@@ -6,7 +6,6 @@ import type { characterUpdateSchema } from './validation';
 
 type CommunityTable = "characters" | "worlds";
 type CommunityEntity = Character | World;
-export type VisibleAvatar = { id: string; owner_id: string; type: string; asset_url: string };
 
 // Uploaded artwork is stored in the character JSON. Keep it out of catalog and
 // bootstrap JSON so one large image does not delay every page and every viewer.
@@ -95,14 +94,6 @@ export async function getCommunity<T extends CommunityEntity>(table: CommunityTa
     `SELECT data, published FROM ${table} WHERE id = ? AND (owner_id IS NULL OR owner_id = ? OR published)`,
   ).get(entityId, userId);
   return row ? ({ ...JSON.parse(row.data as string), published: Boolean(row.published) } as T) : null;
-}
-
-export async function getVisibleAvatar(avatarId: string, userId: string | null): Promise<VisibleAvatar | null> {
-  await ensureVisibilitySchema();
-  const row = await db().prepare(
-    `SELECT a.id,a.owner_id,a.type,a.asset_url FROM avatars a WHERE a.id=? AND (a.owner_id=? OR EXISTS (SELECT 1 FROM characters c WHERE c.avatar_id=a.id AND ${visibleCharacterWhere('c')}))`,
-  ).get(avatarId,userId,...characterViewerArgs(userId));
-  return row ? row as VisibleAvatar : null;
 }
 
 export async function setPublished(table: CommunityTable, entityId: string, ownerId: string, published: boolean): Promise<boolean> {

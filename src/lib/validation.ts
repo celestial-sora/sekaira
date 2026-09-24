@@ -3,7 +3,7 @@ const text=z.string().max(6000).default('');
 const optionalId=z.string().min(1).max(100).nullable().default(null);
 const name=z.string().trim().min(1,'Please enter a name.').max(100);
 export const avatar=z.string().max(2_800_000).refine(v=>/^[0-4]$/.test(v)||/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(v),'Choose an avatar or upload a PNG, JPEG or WebP.').default('0');
-export const characterSchema=z.object({name,description:text,avatar,personality:text,backstory:text,speaking_style:text,likes:text,dislikes:text,relationship_behavior:text,roleplay_guidance:z.string().max(2000).default(''),greeting:text,example_dialogue:text,lore:text,world_id:optionalId,scenario_id:optionalId,faction:text,tags:z.array(z.string().max(30)).max(8).default(['Original']),avatar_id:optionalId,visibility:z.enum(['private','public','friends','selected']).default('private')});
+export const characterSchema=z.object({name,description:text,avatar,personality:text,backstory:text,speaking_style:text,likes:text,dislikes:text,relationship_behavior:text,roleplay_guidance:z.string().max(2000).default(''),greeting:text,example_dialogue:text,lore:text,world_id:optionalId,scenario_id:optionalId,faction:text,tags:z.array(z.string().max(30)).max(8).default(['Original']),visibility:z.enum(['private','public','friends','selected']).default('private')});
 export const characterCreationSchema=characterSchema.extend({friend_ids:z.array(z.string().min(1).max(100)).max(100).default([])});
 export const characterUpdateSchema=z.object({
  name:z.string().trim().min(1).max(100).optional(),

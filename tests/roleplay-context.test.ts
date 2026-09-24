@@ -10,7 +10,7 @@ const message=(index:number):Message=>({
 });
 
 const character:Character={
- id:'char',owner_id:'owner',name:'Mira',description:'',created_at:'',avatar:'0',personality:'Warm',backstory:'',speaking_style:'Casual',likes:'',dislikes:'',relationship_behavior:'Protective',greeting:'',example_dialogue:'',lore:'',world_id:null,scenario_id:null,faction:'',tags:['Original'],avatar_id:null,
+ id:'char',owner_id:'owner',name:'Mira',description:'',created_at:'',avatar:'0',personality:'Warm',backstory:'',speaking_style:'Casual',likes:'',dislikes:'',relationship_behavior:'Protective',greeting:'',example_dialogue:'',lore:'',world_id:null,scenario_id:null,faction:'',tags:['Original'],
 };
 
 test('rolling summary batches old turns without dropping unsummarized context',()=>{

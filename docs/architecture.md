@@ -13,7 +13,7 @@ Discover exposes equally prominent Create Character and Create World actions, pl
 
 ## Independent entities
 
-Users own private characters, worlds, personas, conversations, memories and relationships. Original seeded content is readable by everyone. Characters have nullable world_id/scenario_id for their origin. world_characters is a membership table: importing an OC does not modify its origin or standalone chat behavior. Worlds support many characters. Scenarios and avatars have their own tables.
+Users own private characters, worlds, personas, conversations, memories and relationships. Original seeded content is readable by everyone. Characters have nullable world_id/scenario_id for their origin. world_characters is a membership table: importing an OC does not modify its origin or standalone chat behavior. Worlds support many characters. Scenarios have their own table.
 
 Conversations reference nullable world_id, scenario_id and persona_id. Scene participants are separate from world membership. A standalone conversation has one character and no world; world conversations select at most five active characters, with one active scene per conversation. Memories and world changes are scoped to the user and conversation world/persona; standalone memory is scoped to its character and user. Imported characters cannot retrieve their standalone memories in a world context.
 
@@ -25,7 +25,7 @@ Memory retrieval applies owner, world/persona or standalone character scope, kno
 
 ## Runtime and integrations
 
-Next.js App Router, SQLite with foreign keys/WAL, Zod validation, Groq server-side chat completion calls. Google OAuth authorization code with state and PKCE; opaque, hashed, expiring database sessions. Development guest sessions are separate per browser and disabled in production. VRM presentation uses Three.js and @pixiv/three-vrm independently of chat. No voice features.
+Next.js App Router, SQLite with foreign keys/WAL, Zod validation, Groq server-side chat completion calls. Google OAuth authorization code with state and PKCE; opaque, hashed, expiring database sessions. Development guest sessions are separate per browser and disabled in production. No voice features.
 
 ## Verification gates
 
@@ -37,4 +37,4 @@ Next.js App Router, SQLite with foreign keys/WAL, Zod validation, Groq server-si
 
 ## Deployment prerequisites
 
-Real Groq responses require GROQ_API_KEY. Google login requires this project's OAuth credentials and callback registration. VRM animation requires a compatible licensed .vrm asset. Production needs a persistent Node host/volume for SQLite, HTTPS APP_URL and Google login. This implementation is not a public multi-instance hosted service.
+Real Groq responses require GROQ_API_KEY. Google login requires this project's OAuth credentials and callback registration. Production needs a persistent Node host/volume for SQLite, HTTPS APP_URL and Google login. This implementation is not a public multi-instance hosted service.

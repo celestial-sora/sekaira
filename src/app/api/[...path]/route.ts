@@ -75,7 +75,6 @@ export function isDedicatedPath(path: string[]) {
   }
   if (path[0] === "worlds" && path.length === 3 && path[1] && path[2] === "publish")
     return true;
-  if (path[0] === "avatars" && path.length === 2 && path[1]) return true;
   return false;
 }
 async function chatData(c: Conversation, owner: string) {
@@ -315,13 +314,6 @@ async function handle(req: NextRequest, ctx: Context) {
         .get(input.scenario_id, owner, input.world_id);
       if (!s) fail("Scenario not found in this context.", 404);
     }
-    if (
-      input.avatar_id &&
-      !(await db()
-        .prepare("SELECT id FROM avatars WHERE id=? AND owner_id=?")
-        .get(input.avatar_id, owner))
-    )
-      fail("Avatar not found.", 404);
     return json(
       await transaction(async () => await createCharacter(owner, input, friend_ids)),
       201,
@@ -439,28 +431,6 @@ async function handle(req: NextRequest, ctx: Context) {
         .run(conv.id, owner);
       return json({ ok: true });
     }
-  }
-  if (path[0] === "avatars" && method === "POST") {
-    const input = z
-      .object({
-        asset_url: z
-          .string()
-          .url()
-          .max(2000)
-          .refine(
-            (s) => s.startsWith("https://") && /\.vrm(?:\?|$)/i.test(s),
-            "Use an HTTPS URL to a .vrm file. Allow cross-origin access on its host.",
-          ),
-        type: z.literal("vrm"),
-      })
-      .parse(await body(req));
-    const aid = id();
-    await db()
-      .prepare(
-        "INSERT INTO avatars (id,owner_id,type,asset_url) VALUES (?,?,?,?)",
-      )
-      .run(aid, owner, input.type, input.asset_url);
-    return json({ id: aid }, 201);
   }
   fail("Not found.", 404);
 }

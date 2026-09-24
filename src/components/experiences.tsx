@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 import {
   ArrowLeft,
   ArrowRight,
@@ -43,16 +42,6 @@ import {
   displayTag,
 } from "./shared";
 import { useLanguage } from "./i18n";
-function AvatarLoading() {
-  const { text } = useLanguage();
-  return (
-    <p className="muted">{text("Loading avatar…", "กำลังโหลดอวาตาร์…")}</p>
-  );
-}
-const VrmAvatar = dynamic(() => import("./vrm-avatar"), {
-  ssr: false,
-  loading: AvatarLoading,
-});
 type Refresh = () => Promise<Bootstrap>;
 export function CharacterDetail({
   character: c,
@@ -984,14 +973,7 @@ export function Chat({
             <div
               className={`avatar-stage emotion-${busy ? "talking" : last?.emotion || "idle"}`}
             >
-              {active.avatar_id ? (
-                <VrmAvatar
-                  avatarId={active.avatar_id}
-                  emotion={busy ? "talking" : last?.emotion || "idle"}
-                />
-              ) : (
-                <Portrait avatar={active.avatar} />
-              )}
+              <Portrait avatar={active.avatar} />
               <div className="avatar-caption">
                 <h2>{active.name}</h2>
                 <span className="pill">{emotionLabel}</span>

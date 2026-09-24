@@ -24,7 +24,6 @@ export async function POST(req:NextRequest){
   const {friend_ids,...input}=characterCreationSchema.parse(parsed),owner=user.id;
   if(input.world_id){const world=await get<World>('worlds',input.world_id,owner);if(!world||world.owner_id!==owner)return json({error:'Choose a world you own.'},403);}
   if(input.scenario_id){const scenario=await db().prepare('SELECT id FROM scenarios WHERE id=? AND owner_id=? AND world_id IS ?').get(input.scenario_id,owner,input.world_id);if(!scenario)return json({error:'Scenario not found in this context.'},404);}
-  if(input.avatar_id&&!(await db().prepare('SELECT id FROM avatars WHERE id=? AND owner_id=?').get(input.avatar_id,owner)))return json({error:'Avatar not found.'},404);
   const character=await transaction(async()=>createCharacter(owner,input,friend_ids));
   return json(character,201);
  }catch(error){

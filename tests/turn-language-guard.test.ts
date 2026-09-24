@@ -11,7 +11,7 @@ process.env.DATABASE_PATH=path;
 delete process.env.DATABASE_URL;
 process.env.GROQ_API_KEY='test-key';
 
-const character:Character={id:'thai-speaker',owner_id:'owner',name:'Maomao',description:'',created_at:new Date().toISOString(),avatar:'0',personality:'Reserved',backstory:'',speaking_style:'',likes:'',dislikes:'',relationship_behavior:'',greeting:'สวัสดี',example_dialogue:'',lore:'',world_id:null,scenario_id:null,faction:'',tags:[],avatar_id:null};
+const character:Character={id:'thai-speaker',owner_id:'owner',name:'Maomao',description:'',created_at:new Date().toISOString(),avatar:'0',personality:'Reserved',backstory:'',speaking_style:'',likes:'',dislikes:'',relationship_behavior:'',greeting:'สวัสดี',example_dialogue:'',lore:'',world_id:null,scenario_id:null,faction:'',tags:[]};
 const input={world_id:null,persona_id:null,scenario_id:null,character_ids:[character.id]};
 const response=(value:unknown)=>Response.json({choices:[{message:{content:JSON.stringify(value)}}]});
 

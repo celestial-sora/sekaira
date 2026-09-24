@@ -184,20 +184,11 @@ export function CharacterForm({
       const values = Object.fromEntries(
         new FormData(event.currentTarget).entries(),
       );
-      let avatarId = null;
-      if (values.vrm_url)
-        avatarId = (
-          await api<{ id: string }>("avatars", "POST", {
-            type: "vrm",
-            asset_url: values.vrm_url,
-          })
-        ).id;
       const character = await api<Character>("characters", "POST", {
         ...values,
         avatar,
         world_id: values.world_id || null,
         scenario_id: null,
-        avatar_id: avatarId,
         visibility,
         friend_ids:visibility==='selected'?selectedFriends:[],
         tags: draft.tags
@@ -585,25 +576,6 @@ export function CharacterForm({
                   )}
                 </span>
                 <textarea name="lore" rows={3} maxLength={6000} />
-              </label>
-              <label className="field">
-                <span>
-                  {text(
-                    "VRM model URL (optional)",
-                    "URL โมเดล VRM (ไม่บังคับ)",
-                  )}
-                </span>
-                <input
-                  name="vrm_url"
-                  placeholder="https://your-host.com/character.vrm"
-                  maxLength={2000}
-                />
-                <small>
-                  {text(
-                    "Use a model you own. Its host must allow cross-origin loading.",
-                    "ใช้โมเดลที่คุณมีสิทธิ์ใช้งาน และโฮสต์ต้องอนุญาตการโหลดข้ามต้นทาง",
-                  )}
-                </small>
               </label>
             </div>
           </details>

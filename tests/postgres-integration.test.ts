@@ -63,7 +63,6 @@ if (!databaseUrl) {
       world_id: null,
       scenario_id: null,
       avatar: "0",
-      avatar_id: null,
       published: false,
       created_at: "2026-09-16T00:00:00.000Z",
     };
@@ -167,7 +166,7 @@ if (!databaseUrl) {
 
   test("PostgreSQL friendship and selected sharing restrict reads and new chats", async () => {
     await db().prepare("UPDATE users SET email=? WHERE id=?").run("account-b@example.test", "account-b");
-    const character = {id:"pg-shared",owner_id:"account-a",name:"Shared",world_id:null,scenario_id:null,avatar_id:null,avatar:"0",greeting:"hello",visibility:"private",published:false};
+    const character = {id:"pg-shared",owner_id:"account-a",name:"Shared",world_id:null,scenario_id:null,avatar:"0",greeting:"hello",visibility:"private",published:false};
     await db().prepare("INSERT INTO characters (id,owner_id,visibility,data) VALUES (?,?,?,?)").run(character.id,"account-a","private",JSON.stringify(character));
     await requestFriend("account-a","account-b@example.test");
     await acceptFriend("account-b","account-a");

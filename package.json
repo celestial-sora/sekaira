@@ -11,13 +11,11 @@
     "test:postgres": "node --import tsx --test tests/postgres-integration.test.ts"
   },
   "dependencies": {
-    "@pixiv/three-vrm": "^3.4.0",
     "lucide-react": "0.577.0",
     "next": "16.3.3",
     "pg": "8.23.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "three": "^0.183.0",
     "zod": "4.5.4"
   },
   "devDependencies": {
@@ -25,7 +23,6 @@
     "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/three": "^0.183.0",
     "tsx": "4.23.1",
     "typescript": "^5.9.3"
   },

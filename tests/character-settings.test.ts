@@ -12,7 +12,7 @@ const path=`/tmp/sekaira-settings-${process.pid}.sqlite`;
 process.env.DATABASE_PATH=path;
 delete process.env.DATABASE_URL;
 
-const character:Character={id:'editable',owner_id:'owner',name:'Original',description:'',created_at:new Date().toISOString(),avatar:'0',personality:'Quiet',backstory:'',speaking_style:'',likes:'',dislikes:'',relationship_behavior:'',greeting:'Hello',example_dialogue:'',lore:'',world_id:null,scenario_id:null,faction:'',tags:['Original'],avatar_id:null,visibility:'private'};
+const character:Character={id:'editable',owner_id:'owner',name:'Original',description:'',created_at:new Date().toISOString(),avatar:'0',personality:'Quiet',backstory:'',speaking_style:'',likes:'',dislikes:'',relationship_behavior:'',greeting:'Hello',example_dialogue:'',lore:'',world_id:null,scenario_id:null,faction:'',tags:['Original'],visibility:'private'};
 
 test('owner can update character details and visibility after creation while others cannot',async()=>{
  for(const [id,email] of [['owner','owner@example.test'],['friend','friend@example.test'],['stranger','stranger@example.test']])

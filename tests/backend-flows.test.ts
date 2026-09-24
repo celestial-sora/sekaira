@@ -13,7 +13,7 @@ process.env.DATABASE_PATH=join(testDirectory,'test.sqlite');
 delete process.env.DATABASE_URL;
 
 const characterInput=(name:string,world_id:string|null=null)=>({
-  name,description:'Test character',avatar:'0',personality:'Kind',backstory:'',speaking_style:'Natural',likes:'',dislikes:'',relationship_behavior:'',greeting:'Hello',example_dialogue:'',lore:'',world_id,scenario_id:null,faction:'',tags:['Original'],avatar_id:null,
+  name,description:'Test character',avatar:'0',personality:'Kind',backstory:'',speaking_style:'Natural',likes:'',dislikes:'',relationship_behavior:'',greeting:'Hello',example_dialogue:'',lore:'',world_id,scenario_id:null,faction:'',tags:['Original'],
 });
 const worldInput=(name:string)=>({name,description:'Test world',lore:'',rules:'',locations:'Start',factions:'',power_system:'',timeline:'',world_state:'',genre:'Original' as const,cover:'sky' as const});
 const personaInput=(name:string,world_id:string)=>({name,description:'Test persona',world_id,species:'Human',role:'Traveler',rank:'',faction:'',abilities:'',appearance:'',backstory:'',personality:'',public_facts:'',secret_facts:''});

@@ -88,14 +88,13 @@ export async function createCharacter(
   const storedPublished=hasPostgres()?(published?'true':'false'):published?1:0;
   await db()
     .prepare(
-      "INSERT INTO characters (id,owner_id,world_id,scenario_id,avatar_id,published,visibility,data) VALUES (?,?,?,?,?,?,?,?)",
+      "INSERT INTO characters (id,owner_id,world_id,scenario_id,published,visibility,data) VALUES (?,?,?,?,?,?,?)",
     )
     .run(
       c.id,
       owner,
       c.world_id,
       c.scenario_id,
-      c.avatar_id,
       storedPublished,
       visibility,
       JSON.stringify(c),
@@ -432,7 +431,6 @@ async function seed(d: ReturnType<typeof db>) {
       world_id: worldId,
       scenario_id: null,
       avatar: avatar!,
-      avatar_id: null,
       backstory: description!,
       speaking_style:
         "Natural, expressive; short descriptions of actions in asterisks.",
@@ -448,9 +446,9 @@ async function seed(d: ReturnType<typeof db>) {
     };
     await d
       .prepare(
-        "INSERT INTO characters (id,owner_id,world_id,scenario_id,avatar_id,data) VALUES (?,?,?,?,?,?)",
+        "INSERT INTO characters (id,owner_id,world_id,scenario_id,data) VALUES (?,?,?,?,?)",
       )
-      .run(c.id, null, c.world_id, null, null, JSON.stringify(c));
+      .run(c.id, null, c.world_id, null, JSON.stringify(c));
     if (worldId)
       await d
         .prepare(
