@@ -23,6 +23,7 @@ import {
   Brain,
   Trash2,
   Pencil,
+  Settings2,
 } from "lucide-react";
 import type {
   Bootstrap,
@@ -42,7 +43,6 @@ import {
   displayTag,
 } from "./shared";
 import { useLanguage } from "./i18n";
-import { CharacterSharing } from './character-sharing';
 function AvatarLoading() {
   const { text } = useLanguage();
   return (
@@ -195,7 +195,7 @@ export function CharacterDetail({
                 "ทุกเรื่องราวเริ่มต้นจากคำทักทาย",
               )}
           </blockquote>
-          <button
+          <div className="character-detail-actions"><button
             className="button primary"
             disabled={busy}
             onClick={async () => {
@@ -206,7 +206,7 @@ export function CharacterDetail({
           >
             {text("Chat Now", "แชตเลย")}
             <MessageCircle size={18} />
-          </button>
+          </button>{canEdit&&<Link className="button" href={`/characters/${c.id}/settings`}><Settings2 size={17}/>{text('Character settings','ตั้งค่าตัวละคร')}</Link>}</div>
           <p className="muted">
             {text(
               "A conversation, just the two of you. No persona needed.",
@@ -246,7 +246,6 @@ export function CharacterDetail({
               </p>
             </div>
           </div>
-          {canEdit && <CharacterSharing character={character} onUpdate={onUpdate} />}
           {c.world_id && (
             <Link className="text-link" href={`/worlds/${c.world_id}`}>
               <Globe2 size={16} />

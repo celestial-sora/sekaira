@@ -37,6 +37,7 @@ import {
 } from "./shared";
 import { WorldForm, PersonaForm } from "./forms";
 import { CharacterForm } from "./character-form";
+import { CharacterSettings } from './character-settings';
 import { FriendsPanel } from "./friends-panel";
 import { CharacterDetail, WorldDetail, Chat } from "./experiences";
 import { LanguageProvider, useLanguage } from "./i18n";
@@ -226,6 +227,10 @@ export default function App() {
   else if (path === "/worlds/new") content = <WorldForm refresh={refresh} />;
   else if (path === "/personas/new")
     content = <PersonaForm data={data} refresh={refresh} />;
+  else if (segments[0] === 'characters' && segments[1] && segments[2] === 'settings') {
+    const character=chars.find(item=>item.id===segments[1]&&item.owner_id===data.user?.id);
+    content=character?<CharacterSettings key={character.id} character={character} refresh={refresh}/>:<Empty title={t('Character settings unavailable','ไม่สามารถเปิดการตั้งค่าตัวละครได้')} href="/characters" label={t('All characters','ตัวละครทั้งหมด')}>{t('Only the owner can edit this character.','มีเพียงเจ้าของที่แก้ตัวละครนี้ได้')}</Empty>;
+  }
   else if (segments[0] === "characters" && segments[1]) {
     const character = chars.find((c) => c.id === segments[1]);
     content = (

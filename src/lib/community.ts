@@ -1,6 +1,8 @@
 import { db, hasPostgres, transaction } from "./database";
 import { characterViewerArgs, visibleCharacterWhere } from "./character-access";
 import type { Character, CharacterVisibility, World } from "./types";
+import type { z } from 'zod';
+import type { characterUpdateSchema } from './validation';
 
 type CommunityTable = "characters" | "worlds";
 type CommunityEntity = Character | World;
@@ -127,4 +129,27 @@ export async function setCharacterVisibility(characterId:string,ownerId:string,v
     if(visibility==='selected')for(const friendId of unique)await db().prepare('INSERT INTO character_shares (character_id,user_id) VALUES (?,?)').run(characterId,friendId);
     return true;
   });
+}
+
+export async function updateCharacterDetails(characterId:string,ownerId:string,input:z.infer<typeof characterUpdateSchema>):Promise<Character|null>{
+ await ensureVisibilitySchema();
+ return transaction(async()=>{
+  const row=await db().prepare('SELECT data,visibility FROM characters WHERE id=? AND owner_id=?').get(characterId,ownerId);
+  if(!row)return null;
+  const visibility=(input.visibility??row.visibility) as CharacterVisibility;
+  const priorShares=visibility==='selected'&&input.friend_ids===undefined
+   ?(await db().prepare('SELECT user_id FROM character_shares WHERE character_id=?').all(characterId)).map(item=>item.user_id as string)
+   :[];
+  const friendIds=await validateShareRecipients(ownerId,visibility,input.friend_ids??priorShares);
+  const {friend_ids:_friendIds,...changes}=input;
+  const published=visibility==='public';
+  const previous=JSON.parse(row.data as string) as Character;
+  const updated={...previous,...changes,visibility,published} as Character;
+  const storedPublished=hasPostgres()?(published?'true':'false'):published?1:0;
+  await db().prepare('UPDATE characters SET visibility=?,published=?,data=? WHERE id=? AND owner_id=?').run(visibility,storedPublished,JSON.stringify(updated),characterId,ownerId);
+  if(input.name&&input.name!==previous.name)await db().prepare('UPDATE conversations SET name=? WHERE world_id IS NULL AND name=? AND id IN (SELECT s.conversation_id FROM scenes s JOIN scene_characters sc ON sc.scene_id=s.id WHERE sc.character_id=?)').run(input.name,previous.name,characterId);
+  await db().prepare('DELETE FROM character_shares WHERE character_id=?').run(characterId);
+  if(visibility==='selected')for(const friendId of friendIds)await db().prepare('INSERT INTO character_shares (character_id,user_id) VALUES (?,?)').run(characterId,friendId);
+  return updated;
+ });
 }

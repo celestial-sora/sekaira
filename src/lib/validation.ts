@@ -3,8 +3,26 @@ const text=z.string().max(6000).default('');
 const optionalId=z.string().min(1).max(100).nullable().default(null);
 const name=z.string().trim().min(1,'Please enter a name.').max(100);
 export const avatar=z.string().max(2_800_000).refine(v=>/^[0-4]$/.test(v)||/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(v),'Choose an avatar or upload a PNG, JPEG or WebP.').default('0');
-export const characterSchema=z.object({name,description:text,avatar,personality:text,backstory:text,speaking_style:text,likes:text,dislikes:text,relationship_behavior:text,greeting:text,example_dialogue:text,lore:text,world_id:optionalId,scenario_id:optionalId,faction:text,tags:z.array(z.string().max(30)).max(8).default(['Original']),avatar_id:optionalId,visibility:z.enum(['private','public','friends','selected']).default('private')});
+export const characterSchema=z.object({name,description:text,avatar,personality:text,backstory:text,speaking_style:text,likes:text,dislikes:text,relationship_behavior:text,roleplay_guidance:z.string().max(2000).default(''),greeting:text,example_dialogue:text,lore:text,world_id:optionalId,scenario_id:optionalId,faction:text,tags:z.array(z.string().max(30)).max(8).default(['Original']),avatar_id:optionalId,visibility:z.enum(['private','public','friends','selected']).default('private')});
 export const characterCreationSchema=characterSchema.extend({friend_ids:z.array(z.string().min(1).max(100)).max(100).default([])});
+export const characterUpdateSchema=z.object({
+ name:z.string().trim().min(1).max(100).optional(),
+ description:z.string().max(6000).optional(),
+ personality:z.string().max(6000).optional(),
+ backstory:z.string().max(6000).optional(),
+ speaking_style:z.string().max(6000).optional(),
+ relationship_behavior:z.string().max(6000).optional(),
+ roleplay_guidance:z.string().max(2000).optional(),
+ likes:z.string().max(6000).optional(),
+ dislikes:z.string().max(6000).optional(),
+ greeting:z.string().max(6000).optional(),
+ example_dialogue:z.string().max(6000).optional(),
+ lore:z.string().max(6000).optional(),
+ faction:z.string().max(6000).optional(),
+ tags:z.array(z.string().trim().min(1).max(30)).max(8).optional(),
+ visibility:z.enum(['private','public','friends','selected']).optional(),
+ friend_ids:z.array(z.string().min(1).max(100)).max(100).optional(),
+}).strict().refine(value=>Object.keys(value).length>0,'Choose a field to update.');
 export const worldSchema=z.object({name,description:text,lore:text,rules:text,locations:text,factions:text,power_system:text,timeline:text,world_state:text,genre:z.enum(['Fantasy','Isekai','School','Romance','Mystery','Historical','Action','Sci-fi','Original']).default('Original'),cover:z.enum(['sky','forest','night','city','sunset']).default('sky')});
 export const personaSchema=z.object({name,description:text,world_id:optionalId,species:text,role:text,rank:text,faction:text,abilities:text,appearance:text,backstory:text,personality:text,public_facts:text,secret_facts:text});
 export const conversationSchema=z.object({world_id:optionalId,persona_id:optionalId,scenario_id:optionalId,character_ids:z.array(z.string().min(1).max(100)).min(1).max(5).refine(v=>new Set(v).size===v.length,'Each character can only join once.')}).superRefine((v,ctx)=>{if(!v.world_id&&(v.persona_id||v.scenario_id||v.character_ids.length!==1))ctx.addIssue({code:'custom',message:'Standalone chat has one character and no required persona or scenario.'});if(v.world_id&&!v.persona_id)ctx.addIssue({code:'custom',message:'Choose a persona for this world.'});});

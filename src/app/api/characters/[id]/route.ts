@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { currentUser } from "@/lib/auth";
-import { db, ensureDatabase, transaction, updateCharacterTags } from "@/lib/db";
+import { db, ensureDatabase, transaction } from "@/lib/db";
+import {InvalidCharacterShare,updateCharacterDetails} from '@/lib/community';
+import {characterUpdateSchema} from '@/lib/validation';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,14 +30,15 @@ export async function PATCH(req: NextRequest, ctx: Context) {
     const user = await currentUser();
     if (!user) return response({ error: "Sign in is required." }, 401);
 
-    const input = z.object({ tags: z.array(z.string().trim().min(1).max(30)).max(8) }).strict().parse(await req.json());
+    const input = characterUpdateSchema.parse(await req.json());
     const { id } = await ctx.params;
-    const character = await updateCharacterTags(user.id, id, input.tags);
-    if (!character) return response({ error: "Only the character owner can change tags." }, 403);
+    const character = await updateCharacterDetails(id,user.id,input);
+    if (!character) return response({ error: "Only the character owner can change it." }, 403);
     return response(character);
   } catch (error) {
     if (error instanceof z.ZodError)
       return response({ error: error.issues.map((issue) => issue.message).join(" ") }, 400);
+    if(error instanceof InvalidCharacterShare)return response({error:error.message},400);
     console.error("character update failed", error);
     return response({ error: "Unable to update this character right now." }, 500);
   }

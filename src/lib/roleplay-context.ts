@@ -52,13 +52,23 @@ type ContextArgs={
  userMessage:string;
 };
 
+export type InteractionBeat='answer_question'|'react_to_action'|'brief_exchange'|'continue_scene';
+
+export function interactionBeat(message:string):InteractionBeat{
+ const value=message.trim();
+ if(/[?？]|(?:ไหม|มั้ย|หรือเปล่า|อะไร|ทำไม|ยังไง|อย่างไร|ที่ไหน|เมื่อไร|ใคร|ได้ไหม|หรือไม่)/u.test(value))return 'answer_question';
+ if(/\*[^*]+\*|\([^)]{3,}\)/u.test(value))return 'react_to_action';
+ if(value.length<=45)return 'brief_exchange';
+ return 'continue_scene';
+}
+
 export function compileCharacterContext(args:ContextArgs){
  const {character:c,persona,world,location,scene,state,memories,relationship,recent,styleReference,otherReplies,userMessage}=args;
  return {
   character_profile:{
    name:c.name,description:c.description,personality:c.personality,backstory:c.backstory,
    speaking_style:c.speaking_style,likes:c.likes,dislikes:c.dislikes,
-   relationship_behavior:c.relationship_behavior,example_dialogue:c.example_dialogue,lore:c.lore,tags:c.tags,
+   relationship_behavior:c.relationship_behavior,roleplay_guidance:c.roleplay_guidance??'',example_dialogue:c.example_dialogue,lore:c.lore,tags:c.tags,
   },
   public_persona:persona?{
    name:persona.name,species:persona.species,role:persona.role,rank:persona.rank,faction:persona.faction,
@@ -76,6 +86,11 @@ export function compileCharacterContext(args:ContextArgs){
   memory_recall:memories.map(memory=>({type:memory.type,content:memory.content,importance:memory.importance,confidence:memory.confidence})),
   conversation_summary:state.dialogue_summary||'',
   recent_dialogue:recent,
+  turn_cues:{
+   beat:interactionBeat(userMessage),
+   previous_character_reply:recent.filter(item=>item.role==='assistant'&&item.character_id===c.id).at(-1)?.content??null,
+   latest_user_message:userMessage,
+  },
   style_reference:{user_samples:styleReference,character_speaking_style:c.speaking_style},
   other_replies:otherReplies,
   user_message:userMessage,
