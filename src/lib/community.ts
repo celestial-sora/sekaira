@@ -8,27 +8,49 @@ type CommunityTable = "characters" | "worlds";
 type CommunityEntity = Character | World;
 export type VisibleAvatar = { id: string; owner_id: string; type: string; asset_url: string };
 
+// Uploaded artwork is stored in the character JSON. Keep it out of catalog and
+// bootstrap JSON so one large image does not delay every page and every viewer.
+function servedArtwork<T extends Character>(character: T): T {
+  return character.avatar?.startsWith('data:image/')
+    ? {...character,avatar:`/api/characters/${encodeURIComponent(character.id)}/art`}
+    : character;
+}
+
+export async function characterArtwork(characterId:string,viewerId:string|null):Promise<{type:string;bytes:Uint8Array}|null>{
+  await ensureVisibilitySchema();
+  const row=await db().prepare(
+    `SELECT c.data FROM characters c WHERE c.id=? AND ${visibleCharacterWhere('c')}`,
+  ).get(characterId,...characterViewerArgs(viewerId));
+  if(!row)return null;
+  const avatar=(JSON.parse(row.data as string) as {avatar?:unknown}).avatar;
+  if(typeof avatar!=='string')return null;
+  const match=/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(avatar);
+  if(!match)return null;
+  return {type:match[1],bytes:new Uint8Array(Buffer.from(match[2],'base64'))};
+}
+
 let visibilitySchemaReady: Promise<void> | undefined;
 
 export async function ensureVisibilitySchema() {
   if (!hasPostgres()) return;
   visibilitySchemaReady ??= (async () => {
-    for (const table of ["characters", "worlds"] as const) {
-      await db().prepare(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS published BOOLEAN NOT NULL DEFAULT FALSE`).run();
-      await db().prepare(
-        `UPDATE ${table} SET published = COALESCE((data::jsonb ->> 'published')::boolean, FALSE) WHERE published = FALSE AND data IS NOT NULL`,
-      ).run();
-    }
-    await db().prepare("ALTER TABLE characters ADD COLUMN IF NOT EXISTS visibility TEXT NOT NULL DEFAULT 'private'").run();
-    await db().prepare("UPDATE characters SET visibility='public' WHERE published=TRUE AND visibility='private'").run();
-    await db().prepare("CREATE INDEX IF NOT EXISTS character_visibility ON sekaira.characters(visibility,owner_id)").run();
-    await db().prepare("CREATE TABLE IF NOT EXISTS sekaira.friendships (user_a TEXT NOT NULL REFERENCES sekaira.users(id) ON DELETE CASCADE,user_b TEXT NOT NULL REFERENCES sekaira.users(id) ON DELETE CASCADE,requested_by TEXT NOT NULL REFERENCES sekaira.users(id) ON DELETE CASCADE,status TEXT NOT NULL CHECK(status IN ('pending','accepted')),created_at TEXT NOT NULL,updated_at TEXT NOT NULL,PRIMARY KEY(user_a,user_b),CHECK(user_a<user_b),CHECK(requested_by=user_a OR requested_by=user_b))").run();
-    await db().prepare("CREATE INDEX IF NOT EXISTS friendship_user_b ON sekaira.friendships(user_b,status)").run();
-    await db().prepare("CREATE TABLE IF NOT EXISTS sekaira.character_shares (character_id TEXT NOT NULL REFERENCES sekaira.characters(id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES sekaira.users(id) ON DELETE CASCADE,PRIMARY KEY(character_id,user_id))").run();
-    await db().prepare("CREATE INDEX IF NOT EXISTS character_shares_user ON sekaira.character_shares(user_id,character_id)").run();
-    await db().prepare('ALTER TABLE sekaira.friendships ENABLE ROW LEVEL SECURITY').run();
-    await db().prepare('ALTER TABLE sekaira.character_shares ENABLE ROW LEVEL SECURITY').run();
-    await db().prepare('REVOKE ALL ON sekaira.friendships,sekaira.character_shares FROM PUBLIC,anon,authenticated').run();
+    await db().prepare([
+      "ALTER TABLE characters ADD COLUMN IF NOT EXISTS published BOOLEAN NOT NULL DEFAULT FALSE",
+      "UPDATE characters SET published = COALESCE((data::jsonb ->> 'published')::boolean, FALSE) WHERE published = FALSE AND data IS NOT NULL",
+      "ALTER TABLE worlds ADD COLUMN IF NOT EXISTS published BOOLEAN NOT NULL DEFAULT FALSE",
+      "UPDATE worlds SET published = COALESCE((data::jsonb ->> 'published')::boolean, FALSE) WHERE published = FALSE AND data IS NOT NULL",
+      "ALTER TABLE characters ADD COLUMN IF NOT EXISTS visibility TEXT NOT NULL DEFAULT 'private'",
+      "UPDATE characters SET visibility='public' WHERE published=TRUE AND visibility='private'",
+      "UPDATE characters SET visibility=data::jsonb ->> 'visibility',published=CASE WHEN data::jsonb ->> 'visibility'='public' THEN TRUE ELSE published END WHERE visibility='private' AND data IS NOT NULL AND data::jsonb ->> 'visibility' IN ('public','friends','selected')",
+      "CREATE INDEX IF NOT EXISTS character_visibility ON sekaira.characters(visibility,owner_id)",
+      "CREATE TABLE IF NOT EXISTS sekaira.friendships (user_a TEXT NOT NULL REFERENCES sekaira.users(id) ON DELETE CASCADE,user_b TEXT NOT NULL REFERENCES sekaira.users(id) ON DELETE CASCADE,requested_by TEXT NOT NULL REFERENCES sekaira.users(id) ON DELETE CASCADE,status TEXT NOT NULL CHECK(status IN ('pending','accepted')),created_at TEXT NOT NULL,updated_at TEXT NOT NULL,PRIMARY KEY(user_a,user_b),CHECK(user_a<user_b),CHECK(requested_by=user_a OR requested_by=user_b))",
+      "CREATE INDEX IF NOT EXISTS friendship_user_b ON sekaira.friendships(user_b,status)",
+      "CREATE TABLE IF NOT EXISTS sekaira.character_shares (character_id TEXT NOT NULL REFERENCES sekaira.characters(id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES sekaira.users(id) ON DELETE CASCADE,PRIMARY KEY(character_id,user_id))",
+      "CREATE INDEX IF NOT EXISTS character_shares_user ON sekaira.character_shares(user_id,character_id)",
+      "ALTER TABLE sekaira.friendships ENABLE ROW LEVEL SECURITY",
+      "ALTER TABLE sekaira.character_shares ENABLE ROW LEVEL SECURITY",
+      "REVOKE ALL ON sekaira.friendships,sekaira.character_shares FROM PUBLIC,anon,authenticated",
+    ].join(';')).run();
   })().catch((error) => {
     visibilitySchemaReady = undefined;
     throw error;
@@ -42,7 +64,7 @@ export async function listCommunity<T extends CommunityEntity>(table: CommunityT
     const rows = await db().prepare(
       `SELECT characters.data,characters.published,characters.visibility,characters.owner_id,users.name AS creator_name,users.picture AS creator_picture FROM characters LEFT JOIN users ON users.id=characters.owner_id WHERE ${visibleCharacterWhere('characters')} ORDER BY characters.id DESC`,
     ).all(...characterViewerArgs(userId));
-    return rows.map((row) => ({
+    return rows.map((row) => servedArtwork({
       ...JSON.parse(row.data as string),
       published: Boolean(row.published),
       visibility: row.owner_id === null ? 'public' : row.visibility,
@@ -67,7 +89,7 @@ export async function getCommunity<T extends CommunityEntity>(table: CommunityTa
     const row = await db().prepare(
       `SELECT c.data,c.published,c.visibility,c.owner_id FROM characters c WHERE c.id=? AND ${visibleCharacterWhere('c')}`,
     ).get(entityId,...characterViewerArgs(userId));
-    return row ? ({...JSON.parse(row.data as string),published:Boolean(row.published),visibility:row.owner_id===null?'public':row.visibility} as T) : null;
+    return row ? (servedArtwork({...JSON.parse(row.data as string),published:Boolean(row.published),visibility:row.owner_id===null?'public':row.visibility}) as T) : null;
   }
   const row = await db().prepare(
     `SELECT data, published FROM ${table} WHERE id = ? AND (owner_id IS NULL OR owner_id = ? OR published)`,

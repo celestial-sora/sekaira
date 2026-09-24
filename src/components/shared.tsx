@@ -75,14 +75,8 @@ export function Portrait({
   name?: string;
 }) {
   const remote = avatar.startsWith("https://") || avatar.startsWith("http://");
-  const custom = avatar.startsWith("data:") || remote;
-  const style: CSSProperties = custom
-    ? {
-        backgroundImage: `url("${avatar}")`,
-        backgroundSize: "cover",
-        backgroundPosition: "center 35%",
-      }
-    : { backgroundPosition: `${Number(avatar) * 25}% 35%` };
+  const custom = avatar.startsWith("data:") || remote || avatar.startsWith("/api/characters/");
+  const style: CSSProperties = custom ? {} : { backgroundPosition: `${Number(avatar) * 25}% 35%` };
   return (
     <span
       role={name ? "img" : undefined}
@@ -90,7 +84,7 @@ export function Portrait({
       aria-hidden={!name}
       className={`portrait ${custom ? "portrait-custom" : ""} ${className}`}
       style={style}
-    />
+    >{custom && <img src={avatar} alt="" loading="lazy" decoding="async" />}</span>
   );
 }
 export function SectionTitle({
@@ -126,7 +120,7 @@ export function CharacterCard({ character: c }: { character: Character }) {
           ? text("Scenario character", "ตัวละครในซีนาริโอ")
           : text("Standalone", "ตัวละครเดี่ยว")}
       </span>
-      {c.owner_id && (
+      {c.owner_id && (c.visibility === 'public' || c.published) && (
         <span className="community-badge">
           {text("Community", "คอมมูนิตี้")}
         </span>

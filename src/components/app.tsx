@@ -15,7 +15,6 @@ import {
   Plus,
   ArrowRight,
   ChevronDown,
-  Sparkles,
   Menu,
   X,
   Feather,
@@ -38,6 +37,7 @@ import {
 import { WorldForm, PersonaForm } from "./forms";
 import { CharacterForm } from "./character-form";
 import { CharacterSettings } from './character-settings';
+import { SkeletonLoading } from './skeleton-loading';
 import { FriendsPanel } from "./friends-panel";
 import { CharacterDetail, WorldDetail, Chat } from "./experiences";
 import { LanguageProvider, useLanguage } from "./i18n";
@@ -167,24 +167,7 @@ export default function App() {
   let content;
   if (!data)
     content = (
-      <div className="loading glass" role="status" aria-live="polite">
-        <Sparkles className="loading-mark" />
-        <h1>{t("Opening Oonchai…", "กำลังเปิด Oonchai…")}</h1>
-        <p>
-          {t(
-            "Bringing your characters and scenarios together.",
-            "กำลังพาตัวละครและซีนาริโอของคุณมาพบกัน",
-          )}
-        </p>
-        {error && (
-          <>
-            <ErrorNote message={error} />
-            <button className="button" onClick={() => location.reload()}>
-              {t("Try again", "ลองอีกครั้ง")}
-            </button>
-          </>
-        )}
-      </div>
+      <SkeletonLoading path={path} label={t('Loading page…','กำลังโหลดหน้าเว็บ…')} error={error} retryLabel={t('Try again','ลองอีกครั้ง')} onRetry={()=>location.reload()}/>
     );
   else if (search)
     content = (
@@ -868,7 +851,7 @@ function PublicProfile({ id }: { id: string }) {
   const { text: t } = useLanguage();
   const [profile, setProfile] = useState<{user:{name:string;picture:string|null};characters:Character[];worlds:World[]} | null>(null);
   useEffect(() => { api<typeof profile>(`users/${id}`).then(setProfile).catch(() => setProfile(null)); }, [id]);
-  if (!profile) return <div className="loading glass"><p>{t("Loading profile…", "กำลังโหลดโปรไฟล์…")}</p></div>;
+  if (!profile) return <SkeletonLoading path="/characters" label={t("Loading profile…", "กำลังโหลดโปรไฟล์…")} error="" retryLabel={t("Try again", "ลองอีกครั้ง")} onRetry={()=>location.reload()}/>;
   return <><PageTitle title={profile.user.name} description={t("Community creator", "ผู้สร้างจากคอมมูนิตี้")} /><section className="glass panel public-profile"><Portrait avatar={profile.user.picture || "0"} /><div><h2>{profile.user.name}</h2><p>{t(`${profile.characters.length} characters · ${profile.worlds.length} scenarios`, `${profile.characters.length} ตัวละคร · ${profile.worlds.length} ซีนาริโอ`)}</p></div></section>{profile.characters.length > 0 && <><SectionTitle>{t("Characters", "ตัวละคร")}</SectionTitle><div className="character-grid">{profile.characters.map(c => <CharacterCard key={c.id} character={c} />)}</div></>}{profile.worlds.length > 0 && <><SectionTitle>{t("Scenarios", "ซีนาริโอ")}</SectionTitle><div className="world-grid">{profile.worlds.map(w => <WorldCard key={w.id} world={w} />)}</div></>}</>;
 }
 

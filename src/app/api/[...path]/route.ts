@@ -71,6 +71,7 @@ export function isDedicatedPath(path: string[]) {
   if (path[0] === "characters") {
     if (path.length === 2 && path[1]) return true;
     if (path.length === 3 && path[1] && path[2] === "publish") return true;
+    if (path.length === 3 && path[1] && path[2] === "art") return true;
   }
   if (path[0] === "worlds" && path.length === 3 && path[1] && path[2] === "publish")
     return true;

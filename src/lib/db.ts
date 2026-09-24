@@ -114,8 +114,9 @@ export async function updateCharacterTags(
   characterId: string,
   tags: string[],
 ): Promise<Character | null> {
-  const character = await get<Character>("characters", characterId, owner);
-  if (!character || character.owner_id !== owner) return null;
+  const row = await db().prepare("SELECT data FROM characters WHERE id=? AND owner_id=?").get(characterId, owner);
+  if (!row) return null;
+  const character = JSON.parse(row.data as string) as Character;
   const updated = { ...character, tags };
   await db()
     .prepare("UPDATE characters SET data=? WHERE id=? AND owner_id=?")
