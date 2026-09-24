@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { Pool } from "pg";
 import { db } from "../src/lib/database";
-import { listCommunity, setPublished } from "../src/lib/community";
-import { messages } from "../src/lib/db";
+import { listCommunity, setCharacterVisibility, setPublished } from "../src/lib/community";
+import { get, messages, startConversation } from "../src/lib/db";
+import { acceptFriend, removeFriend, requestFriend } from "../src/lib/friends";
+import type { Character } from "../src/lib/types";
 import { resilientBootstrap } from "../src/lib/bootstrap";
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
@@ -161,5 +163,21 @@ if (!databaseUrl) {
       age_verified: true,
     });
     assert.equal(bootstrapC.characters.some((item) => item.id === character.id), false);
+  });
+
+  test("PostgreSQL friendship and selected sharing restrict reads and new chats", async () => {
+    await db().prepare("UPDATE users SET email=? WHERE id=?").run("account-b@example.test", "account-b");
+    const character = {id:"pg-shared",owner_id:"account-a",name:"Shared",world_id:null,scenario_id:null,avatar_id:null,avatar:"0",greeting:"hello",visibility:"private",published:false};
+    await db().prepare("INSERT INTO characters (id,owner_id,visibility,data) VALUES (?,?,?,?)").run(character.id,"account-a","private",JSON.stringify(character));
+    await requestFriend("account-a","account-b@example.test");
+    await acceptFriend("account-b","account-a");
+    assert.equal(await setCharacterVisibility(character.id,"account-a","selected",["account-b"]),true);
+    assert.ok(await get<Character>("characters",character.id,"account-b"));
+    assert.equal(await get<Character>("characters",character.id,"account-c"),null);
+    const input={world_id:null,persona_id:null,scenario_id:null,character_ids:[character.id]};
+    assert.ok(await startConversation("account-b",input));
+    await removeFriend("account-a","account-b");
+    assert.equal(await get<Character>("characters",character.id,"account-b"),null);
+    await assert.rejects(startConversation("account-b",input));
   });
 }

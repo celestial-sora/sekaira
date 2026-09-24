@@ -37,6 +37,7 @@ import {
 } from "./shared";
 import { WorldForm, PersonaForm } from "./forms";
 import { CharacterForm } from "./character-form";
+import { FriendsPanel } from "./friends-panel";
 import { CharacterDetail, WorldDetail, Chat } from "./experiences";
 import { LanguageProvider, useLanguage } from "./i18n";
 import { singleFlight } from "@/lib/single-flight";
@@ -500,6 +501,7 @@ export default function App() {
               </button>
             )}
           </section>
+          <FriendsPanel user={data.user} />
         </div>
       </>
     );

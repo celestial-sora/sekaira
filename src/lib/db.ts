@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { db, transaction, hasPostgres } from "./database";
+import { ensureVisibilitySchema, getCommunity, listCommunity, validateShareRecipients } from "./community";
+import { characterViewerArgs, visibleCharacterWhere } from "./character-access";
 export { db, transaction } from "./database";
 import type {
   Character,
@@ -39,6 +41,7 @@ export async function ensureDatabase() {
   ]) {
     try { await db().prepare(statement).run(); } catch { /* already migrated */ }
   }
+  await ensureVisibilitySchema();
 }
 export const id = () => randomUUID();
 export const now = () => new Date().toISOString();
@@ -51,6 +54,7 @@ export async function list<T>(
   table: keyof typeof tables,
   userId: string | null,
 ): Promise<T[]> {
+  if(table==='characters')return await listCommunity<Character>('characters',userId) as T[];
   return (
     await db()
       .prepare(
@@ -64,6 +68,7 @@ export async function get<T>(
   entityId: string,
   userId: string | null,
 ): Promise<T | null> {
+  if(table==='characters')return getCommunity<Character>('characters',entityId,userId) as T|null;
   const r = await db()
     .prepare(
       `SELECT data FROM ${tables[table]} WHERE id = ? AND (owner_id IS NULL OR owner_id = ? OR json_extract(data, '$.published') = 1)`,
@@ -74,11 +79,16 @@ export async function get<T>(
 export async function createCharacter(
   owner: string,
   data: Omit<Character, "id" | "owner_id" | "created_at">,
+  friendIds: string[] = [],
 ): Promise<Character> {
-  const c = { ...data, published: false, id: id(), owner_id: owner, created_at: now() };
+  const visibility=data.visibility??'private';
+  const selected=await validateShareRecipients(owner,visibility,friendIds);
+  const published=visibility==='public';
+  const c = { ...data, published, visibility, id: id(), owner_id: owner, created_at: now() };
+  const storedPublished=hasPostgres()?(published?'true':'false'):published?1:0;
   await db()
     .prepare(
-      "INSERT INTO characters (id,owner_id,world_id,scenario_id,avatar_id,data) VALUES (?,?,?,?,?,?)",
+      "INSERT INTO characters (id,owner_id,world_id,scenario_id,avatar_id,published,visibility,data) VALUES (?,?,?,?,?,?,?,?)",
     )
     .run(
       c.id,
@@ -86,8 +96,11 @@ export async function createCharacter(
       c.world_id,
       c.scenario_id,
       c.avatar_id,
+      storedPublished,
+      visibility,
       JSON.stringify(c),
     );
+  for(const friendId of selected)await db().prepare('INSERT INTO character_shares (character_id,user_id) VALUES (?,?)').run(c.id,friendId);
   if (c.world_id)
     await db()
       .prepare(
@@ -138,10 +151,10 @@ export async function worldCharacters(
   return (
     await db()
       .prepare(
-        "SELECT c.data FROM characters c JOIN world_characters wc ON wc.character_id=c.id WHERE wc.world_id=? AND (c.owner_id IS NULL OR c.owner_id=? OR json_extract(c.data, '$.published') = 1)",
+        `SELECT c.data,c.visibility,c.published FROM characters c JOIN world_characters wc ON wc.character_id=c.id WHERE wc.world_id=? AND ${visibleCharacterWhere('c')}`,
       )
-      .all(worldId, owner)
-  ).map((r) => JSON.parse(r.data as string));
+      .all(worldId,...characterViewerArgs(owner))
+  ).map((r) => ({...JSON.parse(r.data as string),visibility:r.visibility,published:Boolean(r.published)}));
 }
 export async function conversations(owner: string): Promise<Conversation[]> {
   return Promise.all(

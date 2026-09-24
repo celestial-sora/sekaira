@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -11,9 +11,10 @@ import {
   Sparkles,
   UsersRound,
 } from "lucide-react";
-import type { Bootstrap, Character } from "@/lib/types";
+import type { Bootstrap, Character, CharacterVisibility } from "@/lib/types";
 import { api, ErrorNote, PageTitle, Portrait } from "./shared";
 import { useLanguage } from "./i18n";
+import {acceptedFriends,type FriendEntry} from './friends-panel';
 
 type Refresh = () => Promise<Bootstrap>;
 type CharacterDraft = {
@@ -121,10 +122,14 @@ export function CharacterForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [created, setCreated] = useState<Character | null>(null);
+  const [visibility,setVisibility]=useState<CharacterVisibility>('private');
+  const [selectedFriends,setSelectedFriends]=useState<string[]>([]);
+  const [friends,setFriends]=useState<FriendEntry[]>([]);
   const scenarioParam =
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("world")
       : null;
+  useEffect(()=>{if(data.user&&!data.user.guest)void api<{friends:FriendEntry[]}>('friends').then(result=>setFriends(acceptedFriends(result.friends))).catch(()=>setFriends([]));},[data.user?.id,data.user?.guest]);
   const update = <K extends keyof CharacterDraft>(
     key: K,
     value: CharacterDraft[K],
@@ -193,6 +198,8 @@ export function CharacterForm({
         world_id: values.world_id || null,
         scenario_id: null,
         avatar_id: avatarId,
+        visibility,
+        friend_ids:visibility==='selected'?selectedFriends:[],
         tags: draft.tags
           .split(",")
           .map((tag) => tag.trim())
@@ -525,6 +532,12 @@ export function CharacterForm({
               onChange={(value) => update("example_dialogue", value)}
             />
           </div>
+          <section className="character-sharing creation-sharing">
+            <h2>{text('Who can use this character?','ใครใช้ตัวละครนี้ได้บ้าง?')}</h2>
+            <p className="muted">{text('Private by default. You can change this later on the character page.','เริ่มต้นเป็นส่วนตัว เปลี่ยนได้ภายหลังที่หน้าตัวละคร')}</p>
+            <label className="field"><span>{text('Visibility','การมองเห็น')}</span><select value={visibility} onChange={event=>setVisibility(event.target.value as CharacterVisibility)}><option value="private">{text('Only me','เฉพาะฉัน')}</option><option value="public">{text('Everyone','ทุกคน')}</option><option value="friends">{text('All friends','เพื่อนทั้งหมด')}</option><option value="selected">{text('Selected friends','เพื่อนที่เลือก')}</option></select></label>
+            {visibility==='selected'&&<div className="share-friends">{friends.length?friends.map(friend=><label key={friend.id}><input type="checkbox" checked={selectedFriends.includes(friend.id)} onChange={event=>setSelectedFriends(current=>event.target.checked?[...current,friend.id]:current.filter(id=>id!==friend.id))}/><span>{friend.name}{friend.email?` · ${friend.email}`:''}</span></label>):<p className="muted">{text('Add and accept a friend first in your account.','เพิ่มและรับเพื่อนในหน้าบัญชีก่อน')} <Link href="/account">{text('Manage friends','จัดการเพื่อน')}</Link></p>}</div>}
+          </section>
           <details className="advanced" open={!!scenarioParam}>
             <summary>
               {text(

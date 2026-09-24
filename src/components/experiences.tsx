@@ -42,6 +42,7 @@ import {
   displayTag,
 } from "./shared";
 import { useLanguage } from "./i18n";
+import { CharacterSharing } from './character-sharing';
 function AvatarLoading() {
   const { text } = useLanguage();
   return (
@@ -245,6 +246,7 @@ export function CharacterDetail({
               </p>
             </div>
           </div>
+          {canEdit && <CharacterSharing character={character} onUpdate={onUpdate} />}
           {c.world_id && (
             <Link className="text-link" href={`/worlds/${c.world_id}`}>
               <Globe2 size={16} />

@@ -20,7 +20,7 @@ import {
   transaction,
   DatabaseContextError,
 } from "@/lib/db";
-import { getCommunity, listCommunity } from "@/lib/community";
+import { getCommunity, listCommunity, InvalidCharacterShare } from "@/lib/community";
 import {
   currentUser,
   guest,
@@ -35,7 +35,7 @@ import {
   isAdmin,
 } from "@/lib/auth";
 import {
-  characterSchema,
+  characterCreationSchema,
   worldSchema,
   personaSchema,
   conversationSchema,
@@ -300,7 +300,7 @@ async function handle(req: NextRequest, ctx: Context) {
   if (!user) fail("Please sign in to save your story.", 401);
   const owner = user.id;
   if (path[0] === "characters" && method === "POST" && path.length === 1) {
-    const input = characterSchema.parse(await body(req));
+    const {friend_ids,...input} = characterCreationSchema.parse(await body(req));
     if (input.world_id) {
       const world = await get<World>("worlds", input.world_id, owner);
       if (!world || world.owner_id !== owner)
@@ -322,7 +322,7 @@ async function handle(req: NextRequest, ctx: Context) {
     )
       fail("Avatar not found.", 404);
     return json(
-      await transaction(async () => await createCharacter(owner, input)),
+      await transaction(async () => await createCharacter(owner, input, friend_ids)),
       201,
     );
   }
@@ -469,6 +469,8 @@ async function route(req: NextRequest, ctx: Context) {
   } catch (e) {
     if (e instanceof z.ZodError)
       return json({ error: e.issues.map((i) => i.message).join(" ") }, 400);
+    if (e instanceof InvalidCharacterShare)
+      return json({ error: e.message }, 400);
     if (e instanceof AppError || e instanceof DatabaseContextError)
       return json({ error: e.message }, e.status);
     console.error(

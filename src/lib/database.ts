@@ -30,7 +30,7 @@ function postgresSSL(){
  return {rejectUnauthorized:false};
 }
 function postgres(){return pool??=new Pool({connectionString:connectionString(),max:1,idleTimeoutMillis:10000,connectionTimeoutMillis:10000,allowExitOnIdle:true,ssl:postgresSSL()});}
-function sqlite(){if(!local){const path=process.env.DATABASE_PATH||'./data/sekaira.sqlite';if(path!==':memory:')mkdirSync(dirname(path),{recursive:true});local=new DatabaseSync(path);local.exec(readFileSync('src/lib/schema.sql','utf8'));}return local;}
+function sqlite(){if(!local){const path=process.env.DATABASE_PATH||'./data/sekaira.sqlite';if(path!==':memory:')mkdirSync(dirname(path),{recursive:true});local=new DatabaseSync(path);local.exec(readFileSync('src/lib/schema.sql','utf8'));try{local.exec("ALTER TABLE characters ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private' CHECK(visibility IN ('private','public','friends','selected'))");}catch(error){if(!String(error).includes('duplicate column name'))throw error;}local.exec("UPDATE characters SET visibility='public' WHERE published=1 AND visibility='private'");local.exec('CREATE INDEX IF NOT EXISTS character_visibility ON characters(visibility,owner_id)');}return local;}
 // Keep repository queries portable: translate SQLite-specific syntax to PostgreSQL
 // without introducing bind placeholders. Captured expressions are SQL, not query arguments.
 export function postgresSQL(sql:string){
@@ -40,7 +40,7 @@ export function postgresSQL(sql:string){
   .replace(/json_extract\(([^,]+),\s*'\$\.published'\)\s*=\s*1/g,(_match,expr)=>`COALESCE(((${String(expr).trim()})::jsonb ->> 'published')::boolean, false) = true`)
   .replace(/MAX\(-100,MIN\(100,(?:relationships\.)?trust\+excluded\.trust\)\)/,'GREATEST((-100)::bigint,LEAST((100)::bigint,relationships.trust+excluded.trust))');
  if(out.startsWith('INSERT OR IGNORE'))out=out.replace('INSERT OR IGNORE','INSERT')+' ON CONFLICT DO NOTHING';
- const tables=['users','sessions','worlds','scenarios','avatars','characters','world_characters','personas','conversations','scenes','scene_characters','messages','memories','relationships','turn_locks'];
+ const tables=['users','sessions','worlds','scenarios','avatars','characters','friendships','character_shares','world_characters','personas','conversations','scenes','scene_characters','messages','memories','relationships','turn_locks'];
  out=out.replace(/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+(\w+)/g,(m,op,table)=>tables.includes(table)?`${op} sekaira.${table}`:m);
  let quote=false,index=0,result='';for(let i=0;i<out.length;i++){const c=out[i];if(c==="'"){if(quote&&out[i+1]==="'"){result+="''";i++;continue;}quote=!quote;}result+=c==='?'&&!quote?`$${++index}`:c;}return result;
 }

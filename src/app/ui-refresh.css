@@ -128,6 +128,7 @@ body{background-image:none}
 .ai-generate{background:var(--ink);border-color:var(--ink)}
 .avatar-stage{background:var(--lavender)}
 .trust-track span{background:var(--purple)}
+.friends-panel h3{margin:24px 0 10px;font-size:14px}.friend-request{display:flex;gap:8px}.friend-request input{flex:1;min-width:0;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.friend-list{display:grid;gap:8px}.friend-row{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:14px}.friend-row .portrait{width:38px;height:38px}.friend-row>div:nth-child(2){min-width:0;flex:1}.friend-row strong,.friend-row small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.friend-row small{font-size:11px;color:var(--muted)}.friend-actions{display:flex;gap:6px}.friend-actions .button{padding:7px 10px}.character-sharing{margin:26px 0;padding:20px;border:1px solid var(--line);border-radius:18px;background:var(--glass)}.character-sharing h2{font-size:21px;margin:0 0 6px}.character-sharing>.field{max-width:360px;margin:14px 0}.share-friends{display:grid;gap:8px;max-height:220px;overflow:auto;margin:12px 0}.share-friends label{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer}.share-friends input{accent-color:var(--purple-dark)}.share-friends a{color:var(--purple-dark);text-decoration:underline}.creation-sharing{margin-top:22px}@media(max-width:600px){.friend-request,.friend-row,.friend-actions{flex-wrap:wrap}.friend-request .button{width:100%}.friend-actions{width:100%;justify-content:flex-end}}
 
 .chat-layout{gap:14px;height:calc(100dvh - 128px);min-height:650px}
 .chat-main,.chat-inspector{border-radius:24px}
@@ -140,6 +141,10 @@ body{background-image:none}
 .composer-area{padding:14px 18px 16px;background:color-mix(in srgb,var(--paper) 90%,transparent);border-top:1px solid var(--line)}
 .composer{padding:6px 7px 6px 16px;border:1px solid var(--line);border-radius:20px;background:var(--paper);box-shadow:0 8px 24px rgba(50,34,41,.08)}
 .composer textarea{padding:10px 0}.send-button{width:46px;height:46px;border-radius:15px}
+.composer{align-items:center;min-width:0;transition:border-color .2s ease,box-shadow .2s ease}
+.composer:focus-within{border-color:var(--purple);box-shadow:0 0 0 3px color-mix(in srgb,var(--purple) 24%,transparent)}
+.composer textarea,.composer textarea:focus,.composer textarea:focus-visible{min-width:0;width:100%;border:0;border-radius:0;background:transparent;color:var(--ink);outline:0;box-shadow:none!important}
+.composer .send-button{flex:0 0 46px;align-self:center;display:grid;place-items:center}
 .inspector-tabs{padding:8px;border-bottom:1px solid var(--line)}.inspector-tabs button{min-height:40px;border-radius:12px}
 .inspector-tabs button.active{background:var(--lavender);color:var(--purple-dark)}
 
