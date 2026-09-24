@@ -1,0 +1,6 @@
+:8080 {
+  reverse_proxy {$VERCEL_ORIGIN} {
+    header_up Host {upstream_hostport}
+    header_up X-Anubis-Origin-Secret {$ANUBIS_ORIGIN_SECRET}
+  }
+}

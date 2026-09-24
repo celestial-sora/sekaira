@@ -1,0 +1,39 @@
+services:
+  edge:
+    image: caddy:2.10.0
+    restart: unless-stopped
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:?Set PUBLIC_DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile.edge:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - anubis
+
+  anubis:
+    image: ghcr.io/techarohq/anubis:v1.27.0
+    restart: unless-stopped
+    environment:
+      BIND: ":8923"
+      TARGET: http://origin:8080
+      ED25519_PRIVATE_KEY_HEX: ${ANUBIS_SIGNING_KEY:?Set ANUBIS_SIGNING_KEY in .env}
+    depends_on:
+      - origin
+
+  origin:
+    image: caddy:2.10.0
+    restart: unless-stopped
+    environment:
+      VERCEL_ORIGIN: ${VERCEL_ORIGIN:?Set VERCEL_ORIGIN in .env}
+      ANUBIS_ORIGIN_SECRET: ${ANUBIS_ORIGIN_SECRET:?Set ANUBIS_ORIGIN_SECRET in .env}
+    volumes:
+      - ./Caddyfile.origin:/etc/caddy/Caddyfile:ro
+
+volumes:
+  caddy_data:
+  caddy_config:

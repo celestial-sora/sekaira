@@ -1,0 +1,5 @@
+{$PUBLIC_DOMAIN} {
+  reverse_proxy anubis:8923 {
+    header_up X-Real-IP {remote_host}
+  }
+}
