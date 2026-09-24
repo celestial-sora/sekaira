@@ -157,8 +157,8 @@ export default function App() {
         scenario_id: null,
         persona_id: null,
       });
-      await refresh();
       router.push(`/chat/${conv.id}`);
+      void refresh().catch((cause) => setError((cause as Error).message));
     } catch (e) {
       setError((e as Error).message);
     }
@@ -588,7 +588,6 @@ export default function App() {
         <div className="app-shell" data-age-range={ageRange || undefined}>
           <div className="workspace">
             <Navigation
-              key={`nav:${path}`}
               path={path}
               user={data?.user ?? null}
               lang={lang}
@@ -604,7 +603,6 @@ export default function App() {
             />
             <main
               id="main-content"
-              key={`main:${path}`}
               className={`main-content ${segments[0] === "chat" && segments[1] ? "chat-page" : ""}`}
               tabIndex={-1}
             >

@@ -320,8 +320,8 @@ export function WorldDetail({
         scenario_id: null,
         character_ids: selected,
       });
-      await refresh();
       router.push(`/chat/${c.id}`);
+      void refresh().catch((cause) => setError((cause as Error).message));
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
@@ -676,7 +676,7 @@ export function Chat({
       });
       setChat(c);
       setPendingMessage(null);
-      await refresh();
+      void refresh().catch((cause) => setError((cause as Error).message));
     } catch (e) {
       setPendingMessage(null);
       setMessage(content);
