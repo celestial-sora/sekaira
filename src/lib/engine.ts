@@ -16,6 +16,17 @@ export function retrieveMemory(all:Memory[],conv:Conversation,charId:string,quer
  return retrieveCharacterMemories(all,conv,charId,query);
 }
 
+function normalizedMemoryText(value:string){return value.toLocaleLowerCase().replace(/\s+/g,' ').trim();}
+export function memoryCameFromRejectedDraft(content:string,rejectedDrafts:string[],acceptedText:string){
+ const memory=normalizedMemoryText(content);
+ if(memory.length<12)return false;
+ if(normalizedMemoryText(acceptedText).includes(memory))return false;
+ return rejectedDrafts.some(draft=>{
+  const rejected=normalizedMemoryText(draft);
+  return rejected.includes(memory)||memory.includes(rejected);
+ });
+}
+
 export async function groq<T>(system:string,user:string,schema:z.ZodType<T>):Promise<T>{
  const apiKey=process.env.GROQ_API_KEY?.trim();
  if(!apiKey)throw new AppError('Groq is not connected yet. Add GROQ_API_KEY to .env.local to enable AI replies.',503);
@@ -108,6 +119,7 @@ export async function runTurn(conv:Conversation,chars:Character[],world:World|nu
   }
 
   const relationshipScope=scope(conv);
+  const rejectedDrafts:string[]=[];
   const replies:Array<{character:Character;reply:z.infer<typeof replySchema>;relationship:Relationship|null}>=[];
   for(const c of active){
    const remembered=retrieveMemory(allMemories,conv,c.id,content);
@@ -122,6 +134,7 @@ export async function runTurn(conv:Conversation,chars:Character[],world:World|nu
    let reply=await groq(replySystem,JSON.stringify(replyInput),replySchema);
    if(hasUnexpectedRepetition(reply.dialogue,previousByCharacter)){
     const rejected=reply.dialogue;
+    rejectedDrafts.push(rejected);
     reply=await groq(
      `${replySystem} The previous draft was rejected for looping or copying prior dialogue. Produce a substantially new continuation without repeating it. Keep the same character voice, dialect/register, personality intensity, relationship state, and scene facts while changing the wording and beat.`,
      JSON.stringify({...replyInput,rejected_draft:rejected}),
@@ -131,6 +144,7 @@ export async function runTurn(conv:Conversation,chars:Character[],world:World|nu
    }
    if(hasUnexpectedLanguage(reply.dialogue,language)){
     const rejected=reply.dialogue;
+    rejectedDrafts.push(rejected);
     reply=await groq(
      `${replySystem} The previous draft used the wrong language. ${languageRule} Produce a fresh response to the latest user message with the same character voice and scene facts.`,
      JSON.stringify({...replyInput,rejected_draft:rejected}),
@@ -152,6 +166,7 @@ export async function runTurn(conv:Conversation,chars:Character[],world:World|nu
      );
      if(review.consistent)break;
      if(attempt===1||!review.corrected_dialogue.trim())throw new AppError('The AI could not keep this reply consistent with the scenario. Nothing was saved; please retry.',502);
+     rejectedDrafts.push(reply.dialogue);
      reply={...reply,dialogue:review.corrected_dialogue};
     }
     if(hasUnexpectedLanguage(reply.dialogue,language)||hasUnexpectedRepetition(reply.dialogue,previousByCharacter))
@@ -171,6 +186,7 @@ export async function runTurn(conv:Conversation,chars:Character[],world:World|nu
    extractedSchema,
   );
   const relationshipEvents=extraction.relationship_events.filter(event=>activeIds.has(event.character_id));
+  const acceptedMemoryText=[content,director?.narration||'',...replies.map(item=>item.reply.dialogue)].join('\n');
 
   await transaction(async()=>{
    const lock=await db().prepare('SELECT token FROM turn_locks WHERE conversation_id=?').get(conv.id);
@@ -187,7 +203,7 @@ export async function runTurn(conv:Conversation,chars:Character[],world:World|nu
    }
 
    const knownBy=memoryRecipients(replies.map(reply=>reply.character.id));
-   for(const memory of extraction.memories.filter(memory=>memory.importance>=.5&&memory.confidence>=.6)){
+   for(const memory of extraction.memories.filter(memory=>memory.importance>=.5&&memory.confidence>=.6&&!memoryCameFromRejectedDraft(memory.content,rejectedDrafts,acceptedMemoryText))){
     const characterId=world?null:active[0]?.id??chars[0].id;
     const exists=await db().prepare('SELECT id FROM memories WHERE owner_id=? AND world_id IS ? AND persona_id IS ? AND character_id IS ? AND content=?').get(conv.owner_id,conv.world_id,conv.persona_id,characterId,memory.content);
     if(!exists)await db().prepare('INSERT INTO memories (id,owner_id,conversation_id,world_id,persona_id,character_id,type,content,importance,confidence,known_by,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)').run(id(),conv.owner_id,conv.id,conv.world_id,conv.persona_id,characterId,memory.type,memory.content,memory.importance,memory.confidence,JSON.stringify(knownBy),now());

@@ -21,9 +21,10 @@ test('owner can update character details and visibility after creation while oth
 
  assert.equal(await updateCharacterDetails(character.id,'stranger',{personality:'Changed'}),null);
  assert.equal((await get<Character>('characters',character.id,'owner'))?.personality,'Quiet');
- const updated=await updateCharacterDetails(character.id,'owner',{name:'Refined',personality:'Observant and reserved',speaking_style:'Short, precise replies',roleplay_guidance:'Notice small gestures and answer directly.',tags:['Mystery','Reserved'],visibility:'public'});
+ const updated=await updateCharacterDetails(character.id,'owner',{name:'Refined',avatar:'3',personality:'Observant and reserved',speaking_style:'Short, precise replies',roleplay_guidance:'Notice small gestures and answer directly.',tags:['Mystery','Reserved'],visibility:'public'});
  assert.equal(updated?.name,'Refined');
  assert.equal(updated?.published,true);
+ assert.equal(updated?.avatar,'3');
  assert.equal((await get<Character>('characters',character.id,'stranger'))?.roleplay_guidance,'Notice small gestures and answer directly.');
 
  await requestFriend('owner','friend@example.test');

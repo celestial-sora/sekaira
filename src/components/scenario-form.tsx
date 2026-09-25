@@ -11,22 +11,23 @@ import {useLanguage} from './i18n';
 type Refresh=()=>Promise<Bootstrap>;
 type ScenarioDraft={name:string;description:string;lore:string;rules:string;locations:string;factions:string;power_system:string;timeline:string;world_state:string;genre:World['genre'];cover:World['cover']};
 const emptyDraft:ScenarioDraft={name:'',description:'',lore:'',rules:'',locations:'',factions:'',power_system:'',timeline:'',world_state:'',genre:'Original',cover:'sky'};
+function fromScenario(scenario:World):ScenarioDraft{return {name:scenario.name,description:scenario.description,lore:scenario.lore,rules:scenario.rules,locations:scenario.locations,factions:scenario.factions,power_system:scenario.power_system,timeline:scenario.timeline,world_state:scenario.world_state,genre:scenario.genre,cover:scenario.cover};}
 
 function Field({name,label,value,onChange,placeholder='',area=false,required=false}:{name:keyof ScenarioDraft;label:string;value:string;onChange:(value:string)=>void;placeholder?:string;area?:boolean;required?:boolean}){
  const common={name,value,placeholder,required,onChange:(event:ChangeEvent<HTMLInputElement|HTMLTextAreaElement>)=>onChange(event.target.value),maxLength:6000};
  return <label className={`field ${area?'wide':''}`}><span>{label}{required&&<b> *</b>}</span>{area?<textarea {...common} rows={3}/>:<input {...common} maxLength={name==='name'?100:6000}/>}</label>;
 }
 
-export function ScenarioForm({refresh}:{refresh:Refresh}){
- const router=useRouter();const {text}=useLanguage();
- const [draft,setDraft]=useState<ScenarioDraft>(emptyDraft),[idea,setIdea]=useState(''),[generating,setGenerating]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
+export function ScenarioForm({refresh,scenario}:{refresh:Refresh;scenario?:World}){
+ const router=useRouter();const {text}=useLanguage();const editing=Boolean(scenario);
+ const [draft,setDraft]=useState<ScenarioDraft>(()=>scenario?fromScenario(scenario):emptyDraft),[idea,setIdea]=useState(''),[generating,setGenerating]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const update=<K extends keyof ScenarioDraft>(key:K,value:ScenarioDraft[K])=>setDraft(current=>({...current,[key]:value}));
  const genres:Array<[World['genre'],string]>=[['Original','ต้นฉบับ'],['Fantasy','แฟนตาซี'],['Isekai','ต่างโลก'],['School','โรงเรียน'],['Romance','โรแมนติก'],['Mystery','ลึกลับ'],['Historical','ประวัติศาสตร์'],['Action','แอ็กชัน'],['Sci-fi','ไซไฟ']];
  async function generate(){if(!idea.trim()||generating)return;setGenerating(true);setError('');try{setDraft(await api<ScenarioDraft>('worlds/generate','POST',{prompt:idea}));}catch(error){setError((error as Error).message);}finally{setGenerating(false);}}
- async function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();setBusy(true);setError('');try{const world=await api<World>('worlds','POST',draft);await refresh();router.push(`/worlds/${world.id}`);}catch(error){setError((error as Error).message);setBusy(false);}}
+ async function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();setBusy(true);setError('');try{const world=await api<World>(scenario?`worlds/${scenario.id}`:'worlds',scenario?'PATCH':'POST',draft);await refresh();router.push(`/worlds/${world.id}`);}catch(error){setError((error as Error).message);setBusy(false);}}
  return <>
-  <Link href="/create" className="back-link"><ArrowLeft size={16}/>{text('Back to Create','กลับไปหน้าสร้าง')}</Link>
-  <PageTitle eyebrow={text('A SCENARIO OF YOUR OWN','ซีนาริโอในแบบของคุณ')} title={text('Create Scenario','สร้างซีนาริโอ')} description={text('Describe the world you want. AI can shape a complete editable draft, or you can build it manually.','บอกโลกหรือซีนาริโอที่ต้องการ ให้ AI ช่วยสร้างร่างที่แก้ไขต่อได้ หรือจะเขียนเองทั้งหมดก็ได้')}/>
+  <Link href={scenario?`/worlds/${scenario.id}`:'/create'} className="back-link"><ArrowLeft size={16}/>{scenario?text('Back to scenario','กลับไปหน้าซีนาริโอ'):text('Back to Create','กลับไปหน้าสร้าง')}</Link>
+  <PageTitle eyebrow={text(editing?'EDIT YOUR SCENARIO':'A SCENARIO OF YOUR OWN',editing?'แก้ไขซีนาริโอของคุณ':'ซีนาริโอในแบบของคุณ')} title={text(editing?'Edit Scenario':'Create Scenario',editing?'แก้ไขซีนาริโอ':'สร้างซีนาริโอ')} description={text(editing?'Update canon, rules, locations, and the starting state. Existing chats keep their history while future replies use the saved scenario data.':'Describe the world you want. AI can shape a complete editable draft, or you can build it manually.',editing?'แก้ canon กฎ สถานที่ และสถานะเริ่มต้น แชตเดิมยังเก็บประวัติไว้ ส่วนคำตอบใหม่จะใช้ข้อมูลซีนาริโอที่บันทึก':'บอกโลกหรือซีนาริโอที่ต้องการ ให้ AI ช่วยสร้างร่างที่แก้ไขต่อได้ หรือจะเขียนเองทั้งหมดก็ได้')}/>
   <form onSubmit={submit} className="form-layout">
    <div className="form-main glass">
     <section className="ai-character-builder">
@@ -50,7 +51,7 @@ export function ScenarioForm({refresh}:{refresh:Refresh}){
      <Field name="world_state" label={text('Initial scenario state','สถานะเริ่มต้นของซีนาริโอ')} area value={draft.world_state} onChange={value=>update('world_state',value)} placeholder={text('What is happening right now when the user enters?','ตอนผู้ใช้เข้ามา กำลังเกิดอะไรขึ้นในโลกนี้?')}/>
     </div>
     <ErrorNote message={error}/>
-    <div className="form-footer"><span>{text('Private to your account','เป็นส่วนตัวสำหรับบัญชีของคุณ')}</span><button className="button primary" disabled={busy||!draft.name.trim()}>{busy?text('Creating…','กำลังสร้าง…'):text('Create Scenario','สร้างซีนาริโอ')}<ArrowRight size={17}/></button></div>
+    <div className="form-footer"><span>{editing?text('Saved changes affect future scenario turns.','การแก้ไขที่บันทึกจะใช้กับเทิร์นถัดไปของซีนาริโอ'):text('Private to your account','เป็นส่วนตัวสำหรับบัญชีของคุณ')}</span><button className="button primary" disabled={busy||!draft.name.trim()}>{busy?text(editing?'Saving…':'Creating…',editing?'กำลังบันทึก…':'กำลังสร้าง…'):text(editing?'Save Scenario':'Create Scenario',editing?'บันทึกซีนาริโอ':'สร้างซีนาริโอ')}<ArrowRight size={17}/></button></div>
    </div>
    <aside className="form-preview glass"><div className={`world-preview-art world-${draft.cover}`}/><span className="eyebrow">{text('YOUR SCENARIO','ซีนาริโอของคุณ')}</span><h2>{draft.name||text('A world waiting to exist','โลกที่กำลังรอให้ถือกำเนิด')}</h2><span className="pill">{draft.genre}</span><p>{draft.description||text('Use AI to draft the setting, then tune every detail before saving.','ใช้ AI ร่างโลก แล้วปรับทุกจุดได้ก่อนบันทึก')}</p><div className="preview-note"><Sparkles size={20}/><p>{text('AI creates the foundation; you keep final control over canon, rules, and starting state.','AI ช่วยวางรากฐาน แต่คุณเป็นคนตัดสิน canon กฎ และสถานะเริ่มต้นสุดท้าย')}</p></div></aside>
   </form>
