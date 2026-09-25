@@ -29,6 +29,7 @@ export const conversationSchema=z.object({world_id:optionalId,persona_id:optiona
 export const turnSchema=z.object({content:z.string().trim().min(1).max(4000),character_ids:z.array(z.string().max(100)).max(5).optional()});
 export const emotion=z.enum(['idle','talking','happy','shy','angry','sad','surprised']);
 export const replySchema=z.object({dialogue:z.string().min(1).max(8000),emotion:emotion.default('idle')});
+export const groundingSchema=z.object({consistent:z.boolean(),corrected_dialogue:z.string().max(8000)});
 export const directorSchema=z.object({narration:z.string().max(3000),state_summary:z.string().max(4000),event:z.string().max(500).default(''),active_character_ids:z.array(z.string()).max(3)});
 export const summarySchema=z.object({summary:z.string().max(4000)});
 export const relationshipEventSchema=z.object({
