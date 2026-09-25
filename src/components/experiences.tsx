@@ -310,6 +310,21 @@ export function WorldDetail({
       setBusy(false);
     }
   }
+  async function togglePublication() {
+    if (!world || !owned) return;
+    const published = !world.published;
+    setBusy(true);
+    setError("");
+    try {
+      await api(`worlds/${id}/publish`, "POST", { published });
+      setWorld((current) => current ? { ...current, published } : current);
+      void refresh().catch((cause) => setError((cause as Error).message));
+    } catch (cause) {
+      setError((cause as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   async function start() {
     setBusy(true);
     setError("");
@@ -366,6 +381,27 @@ export function WorldDetail({
             {chars.length} {text("characters", "ตัวละคร")}
           </span>
         </div>
+        {owned && (
+          <div className="inline-actions">
+            <button
+              className="button"
+              type="button"
+              disabled={busy}
+              aria-pressed={Boolean(world.published)}
+              onClick={togglePublication}
+            >
+              <Globe2 size={16} />
+              {world.published
+                ? text("Published · Unpublish", "เผยแพร่แล้ว · ยกเลิกการเผยแพร่")
+                : text("Publish to community", "เผยแพร่สู่คอมมูนิตี้")}
+            </button>
+            <span className="muted">
+              {world.published
+                ? text("Anyone can discover and play this scenario.", "ทุกคนค้นหาและเล่นซีนาริโอนี้ได้")
+                : text("Only you can access this scenario.", "ขณะนี้มีเพียงคุณที่เข้าถึงซีนาริโอนี้ได้")}
+            </span>
+          </div>
+        )}
       </section>
       <div className="world-detail-layout">
         <div>
