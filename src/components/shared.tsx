@@ -149,7 +149,8 @@ export function CharacterCard({ character: c }: { character: Character }) {
 export function WorldCard({ world: w }: { world: World }) {
   const { text, language } = useLanguage();
   return (
-    <div className={`world-card world-${w.cover}`}>
+    <div className={`world-card world-${w.cover}${w.cover_image ? " has-image" : ""}`}>
+      {w.cover_image && <img className="world-card-image" src={w.cover_image} alt="" loading="lazy" decoding="async" />}
       <Link href={`/worlds/${w.id}`} className="card-hit-area" aria-label={text(`View ${w.name}`, `ดู ${w.name}`)} />
       <span className="card-badge">
         {w.owner_id
