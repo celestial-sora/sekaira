@@ -362,7 +362,8 @@ export function WorldDetail({
         <ArrowLeft size={16} />
         {text("All scenarios", "ซีนาริโอทั้งหมด")}
       </Link>
-      <section className={`world-detail-hero glass world-${world.cover}`}>
+      <section className={`world-detail-hero glass world-${world.cover}${world.cover_image ? " has-image" : ""}`}>
+        {world.cover_image && <img className="world-detail-image" src={world.cover_image} alt="" />}
         <span className="eyebrow">
           {owned
             ? text("YOUR SCENARIO", "ซีนาริโอของคุณ")

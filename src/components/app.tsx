@@ -916,6 +916,9 @@ function Home({ data }: { data: Bootstrap }) {
   const [category, setCategory] = useState("All");
   const world = data.worlds.find((w) => w.id === "aetheria") || data.worlds[0];
   const continuation = data.conversations[0];
+  const continueWorld = continuation?.world_id
+    ? data.worlds.find((item) => item.id === continuation.world_id)
+    : world;
   const categories = [
     "All",
     "Yuri",
@@ -1095,7 +1098,9 @@ function Home({ data }: { data: Bootstrap }) {
               ? t("Continue your story", "เล่าเรื่องราวต่อ")
               : t("Discover Oonchai", "ค้นพบ Oonchai")}
           </SectionTitle>
-          <div className="continue-art" />
+          <div className={`continue-art ${continueWorld ? `world-${continueWorld.cover}` : ""}${continueWorld?.cover_image ? " has-image" : ""}`}>
+            {continueWorld?.cover_image && <img className="continue-art-image" src={continueWorld.cover_image} alt="" />}
+          </div>
           <h3>
             {continuation?.name ||
               world?.name ||

@@ -143,3 +143,30 @@ html[data-theme='dark'] .conversation-cards>a{background:#241b20;border-color:#4
 .scenario-art-editor{margin:8px 0 24px;padding:18px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--paper) 78%,transparent)}
 .scenario-art-editor .form-section-heading{margin:0 0 14px}.scenario-art-row{display:grid;grid-template-columns:minmax(220px,1.2fr) minmax(180px,.8fr);gap:16px;align-items:center}.scenario-art-preview{aspect-ratio:16/9;overflow:hidden;border:1px solid var(--line);border-radius:16px;background:var(--lavender)}.scenario-art-preview img,.world-preview-art.has-custom-image img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;filter:none;opacity:1;mix-blend-mode:normal}.scenario-art-fallback{width:100%;height:100%;display:grid;place-items:center;align-content:center;gap:8px;color:#fff;font-size:12px;font-weight:700}.scenario-art-actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center}.scenario-art-actions .button{justify-content:center}.scenario-art-actions small{width:100%;color:var(--muted);font-size:11px}.world-preview-art.has-custom-image{overflow:hidden;background:none;background-blend-mode:normal}.world-preview-art.has-custom-image img{border-radius:inherit}
 @media(max-width:600px){.scenario-art-row{grid-template-columns:1fr}.scenario-art-actions .button{flex:1}}
+
+
+/* Stage 2: render scenario artwork as real media instead of theme-tinted backgrounds. */
+.world-card.has-image{min-height:220px;aspect-ratio:16/10;background:#17131c}
+.world-card .world-card-image{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;object-position:center;filter:none;opacity:1;mix-blend-mode:normal}
+.world-card.has-image:before{z-index:1;background:linear-gradient(to top,rgba(16,12,22,.88) 0,rgba(16,12,22,.56) 34%,rgba(16,12,22,.12) 62%,transparent 80%)}
+.world-card.has-image>*:not(.world-card-image){z-index:2}
+.world-card.has-image .card-hit-area{z-index:5}
+.world-card.has-image .community-badge,.world-card.has-image .card-badge{z-index:3}
+
+.world-detail-hero{position:relative;overflow:hidden}
+.world-detail-hero.has-image{min-height:clamp(320px,42vw,520px);display:flex;flex-direction:column;justify-content:flex-end;background:#17131c}
+.world-detail-image{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;object-position:center;filter:none;opacity:1;mix-blend-mode:normal}
+.world-detail-hero.has-image:before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(14,11,18,.78) 0,rgba(14,11,18,.44) 34%,rgba(14,11,18,.08) 62%,transparent 82%);pointer-events:none}
+.world-detail-hero.has-image>*:not(.world-detail-image){position:relative;z-index:2}
+.world-detail-hero.has-image>p{max-width:min(620px,72%)}
+
+.continue-art{overflow:hidden}
+.continue-art.has-image{background:none;background-blend-mode:normal}
+.continue-art-image{display:block;width:100%;height:100%;object-fit:cover;object-position:center;filter:none;opacity:1;mix-blend-mode:normal}
+
+@media(max-width:600px){
+ .world-card.has-image{min-height:210px;aspect-ratio:4/3}
+ .world-detail-hero.has-image{min-height:360px}
+ .world-detail-hero.has-image:before{background:linear-gradient(to top,rgba(14,11,18,.82) 0,rgba(14,11,18,.42) 48%,rgba(14,11,18,.06) 78%,transparent)}
+ .world-detail-hero.has-image>p{max-width:100%}
+}
