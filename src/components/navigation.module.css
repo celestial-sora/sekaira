@@ -7,24 +7,38 @@
 .primary a[aria-current=page],.secondary a[aria-current=page]{background:var(--lavender);color:var(--purple-dark)}
 .actions{display:flex;align-items:center;gap:4px;min-width:0}
 .icon{display:grid;place-items:center;position:relative;flex:none;width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:var(--ink)}
-.account{display:flex;align-items:center;gap:8px;min-width:0;max-width:210px;min-height:48px;padding:6px 14px 6px 7px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:13px;font-weight:700}
+.quick{display:flex;align-items:center;justify-content:center;gap:6px;flex:none;min-width:44px;height:44px;padding:0 11px;border:1px solid transparent;border-radius:999px;background:transparent;color:var(--ink);font-size:12px;font-weight:700}
+.languageLabel{min-width:22px;text-align:center;letter-spacing:.02em}
+.quickLabel{font-size:12px}
+.account{display:flex;align-items:center;gap:8px;min-width:0;max-width:210px;min-height:48px;padding:6px 14px 6px 7px;border:0;border-radius:999px;background:var(--ink);color:var(--paper);font-size:13px;font-weight:700}
 .account>span:first-child{width:32px;height:32px;flex:none}
 .account .username{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .account>svg{flex:none}
 .searchDot{position:absolute;right:8px;top:7px;width:7px;height:7px;border-radius:50%;background:var(--purple-dark)}
-.searchPanel,.morePanel{position:absolute;top:calc(100% + 8px);right:0;border:1px solid var(--line);border-radius:24px;background:color-mix(in srgb,var(--paper) 84%,transparent);backdrop-filter:blur(28px) saturate(1.1);box-shadow:0 12px 36px #24182026;transform-origin:top right;animation:nav-pop .34s cubic-bezier(.22,1,.36,1) both}
+.searchPanel,.morePanel,.accountPanel{position:absolute;top:calc(100% + 8px);right:0;border:1px solid var(--line);border-radius:24px;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(28px) saturate(1.1);box-shadow:0 12px 36px #24182026;transform-origin:top right;animation:nav-pop .34s cubic-bezier(.22,1,.36,1) both}
 @keyframes nav-pop{from{opacity:0;transform:translateY(-8px) scale(.97);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
 .searchPanel{display:flex;align-items:center;gap:12px;width:min(560px,100%);padding:8px 12px 8px 20px}
 .searchPanel input{min-width:0;width:100%;min-height:44px;background:transparent;border:0;color:var(--ink);font-size:16px}
 .morePanel{width:min(330px,100%);padding:12px;max-height:calc(100dvh - 170px);overflow-y:auto;overscroll-behavior:contain}
+.accountPanel{width:min(390px,100%);padding:12px;max-height:calc(100dvh - 150px);overflow-y:auto;overscroll-behavior:contain}
+.accountIdentity{display:flex;align-items:center;gap:12px;padding:8px 8px 14px;border-bottom:1px solid var(--line)}
+.accountIdentity>span:first-child{width:46px;height:46px;flex:none}
+.accountIdentity>div{display:grid;gap:3px;min-width:0}
+.accountIdentity strong,.accountIdentity span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.accountIdentity span{font-size:12px;color:var(--muted)}
+.accountMeta{display:flex;justify-content:space-between;gap:12px;padding:10px 8px;font-size:11px;color:var(--muted)}
+.accountFriends{margin:2px 0 10px}
+.accountFriends :global(.friends-panel){padding:14px;border-radius:18px;box-shadow:none}
+.accountFriends :global(.friends-panel h2){font-size:18px;margin-top:0}
+.accountFriends :global(.friend-list){max-height:220px;overflow:auto}
+.accountAction{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:44px;padding:10px 14px;border:1px solid var(--line);border-radius:14px;background:var(--lavender);color:var(--ink);font-size:13px;font-weight:700}
 .identity{display:grid;gap:4px;padding:12px 12px 16px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
 .identity span{font-size:12px;color:var(--muted)}
 .secondary{display:grid;gap:4px;padding:8px 0}
 .secondary a{min-height:44px;color:var(--ink);font-size:14px;border-radius:12px}
-.preferences{display:flex;flex-wrap:wrap;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
-.preferences button{display:flex;align-items:center;justify-content:center;gap:6px;flex:1;min-height:44px;border:1px solid var(--line);border-radius:12px;background:var(--lavender);color:var(--ink);font-size:13px;white-space:nowrap}
 .header :is(a,button,input):focus-visible{outline:3px solid var(--purple-dark);outline-offset:3px}
-@media(hover:hover){.primary a:hover,.secondary a:hover,.icon:hover{background:var(--lavender);color:var(--purple-dark)}.account:hover{box-shadow:0 0 0 3px var(--line)}}
+@media(hover:hover){.primary a:hover,.secondary a:hover,.icon:hover,.quick:hover{background:var(--lavender);color:var(--purple-dark)}.account:hover{box-shadow:0 0 0 3px var(--line)}.accountAction:hover{background:var(--purple-soft)}}
 @media(max-width:900px){.header{width:calc(100% - 24px);margin:12px auto 16px}.bar{gap:6px}.primary a{padding-inline:10px;font-size:13px}.primary a>svg{display:none}.account{max-width:160px}}
-@media(max-width:680px){.header{width:calc(100% - 20px);margin:10px auto 14px}.bar{display:grid;grid-template-columns:48px minmax(0,1fr);border-radius:28px;padding:8px;gap:6px}.actions{justify-content:flex-end}.account{max-width:min(210px,calc(100vw - 184px));margin-left:4px}.account>svg{display:none}.primary{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);padding-top:6px}.primary a{flex-direction:column;gap:4px;min-height:52px;padding:5px 2px;border-radius:18px;font-size:11px}.primary a>svg{display:block}.morePanel{max-height:calc(100dvh - 190px - env(safe-area-inset-top))}}
-@media(prefers-reduced-motion:reduce){.searchPanel,.morePanel{animation:none}}
+@media(max-width:680px){.header{width:calc(100% - 20px);margin:10px auto 14px}.bar{display:grid;grid-template-columns:48px minmax(0,1fr);border-radius:28px;padding:8px;gap:6px}.actions{justify-content:flex-end;gap:2px}.quick{width:40px;min-width:40px;height:40px;padding:0}.quickLabel{display:none}.account{width:42px;min-width:42px;height:42px;min-height:42px;padding:5px;margin-left:2px}.account .username,.account>svg{display:none}.account>span:first-child{width:32px;height:32px}.primary{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);padding-top:6px}.primary a{flex-direction:column;gap:4px;min-height:52px;padding:5px 2px;border-radius:18px;font-size:11px}.primary a>svg{display:block}.morePanel,.accountPanel{max-height:calc(100dvh - 190px - env(safe-area-inset-top))}.accountPanel{width:100%}}
+@media(max-width:420px){.icon{width:40px;height:40px}.actions{gap:0}.quick{width:38px;min-width:38px}.account{width:40px;min-width:40px}}
+@media(prefers-reduced-motion:reduce){.searchPanel,.morePanel,.accountPanel{animation:none}}

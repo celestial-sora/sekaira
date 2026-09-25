@@ -652,10 +652,11 @@ function Navigation({
   onLanguage,
   onTheme,
 }: NavigationProps) {
-  const [panel, setPanel] = useState<"more" | "search" | null>(null);
+  const [panel, setPanel] = useState<"more" | "search" | "account" | null>(null);
   const header = useRef<HTMLElement>(null),
     moreButton = useRef<HTMLButtonElement>(null),
     searchButton = useRef<HTMLButtonElement>(null),
+    accountButton = useRef<HTMLButtonElement>(null),
     searchInput = useRef<HTMLInputElement>(null);
   const t = (en: string, th: string) => (lang === "th" ? th : en);
   // Never fall back to an email address, including a provider-supplied name containing one.
@@ -677,13 +678,15 @@ function Navigation({
     ["/create", "Create", "สร้าง", Plus],
     ["/personas", "My Personas", "Persona ของฉัน", UserRound],
     ["/library", "Library", "คลังเรื่องราว", Library],
-    ["/account", "Account", "บัญชี", UserRound],
     ["/settings", "Settings", "ตั้งค่า", Settings],
   ] as Array<readonly [string,string,string,typeof Plus]>;
   if (user?.admin) secondary.push(["/admin", "Admin", "แอดมิน", Settings]);
   useEffect(() => {
     if (panel === "search") searchInput.current?.focus();
   }, [panel]);
+  useEffect(() => {
+    setPanel(null);
+  }, [path]);
   useEffect(() => {
     if (!panel) return;
     const outside = (event: PointerEvent) => {
@@ -707,7 +710,7 @@ function Navigation({
       onKeyDown={(event) => {
         if (event.key === "Escape" && panel) {
           event.preventDefault();
-          const button = panel === "search" ? searchButton : moreButton;
+          const button = panel === "search" ? searchButton : panel === "account" ? accountButton : moreButton;
           setPanel(null);
           button.current?.focus();
         }
@@ -750,29 +753,50 @@ function Navigation({
             {search && <span className={navStyles.searchDot} />}
           </button>
           <button
+            className={navStyles.quick}
+            type="button"
+            aria-label={t("Switch language", "เปลี่ยนภาษา")}
+            title={t("Switch language", "เปลี่ยนภาษา")}
+            onClick={onLanguage}
+          >
+            <span className={navStyles.languageLabel}>{lang === "en" ? "EN" : "ไทย"}</span>
+          </button>
+          <button
+            className={navStyles.quick}
+            type="button"
+            aria-label={theme === "dark" ? t("Switch to light mode", "เปลี่ยนเป็นโหมดสว่าง") : t("Switch to dark mode", "เปลี่ยนเป็นโหมดมืด")}
+            title={theme === "dark" ? t("Light mode", "โหมดสว่าง") : t("Dark mode", "โหมดมืด")}
+            aria-pressed={theme === "dark"}
+            onClick={onTheme}
+          >
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            <span className={navStyles.quickLabel}>{theme === "dark" ? t("Light", "สว่าง") : t("Dark", "มืด")}</span>
+          </button>
+          <button
             ref={moreButton}
             className={navStyles.icon}
             type="button"
-            aria-label={t(
-              "More navigation and settings",
-              "เมนูเพิ่มเติมและตั้งค่า",
-            )}
+            aria-label={t("More navigation", "เมนูเพิ่มเติม")}
             aria-expanded={panel === "more"}
             aria-controls="navigation-more"
             onClick={() => setPanel(panel === "more" ? null : "more")}
           >
             {panel === "more" ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <Link
-            href="/account"
+          <button
+            ref={accountButton}
+            type="button"
             className={navStyles.account}
             aria-label={t("Account: ", "บัญชี: ") + username}
+            aria-expanded={panel === "account"}
+            aria-controls="navigation-account"
             title={username}
+            onClick={() => setPanel(panel === "account" ? null : "account")}
           >
             <Portrait avatar={user?.picture || "4"} />
             <span className={navStyles.username}>{username}</span>
             <ChevronDown size={14} aria-hidden="true" />
-          </Link>
+          </button>
         </div>
       </div>
       {panel === "search" && (
@@ -826,22 +850,53 @@ function Navigation({
               </Link>
             ))}
           </nav>
-          <div className={navStyles.preferences}>
-            <button type="button" onClick={onLanguage}>
-              {" "}
-              {lang === "en" ? "ภาษาไทย" : "English"}
-            </button>
-            <button
-              type="button"
-              aria-pressed={theme === "dark"}
-              onClick={onTheme}
-            >
-              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}{" "}
-              {theme === "dark"
-                ? t("Light mode", "โหมดสว่าง")
-                : t("Dark mode", "โหมดมืด")}
-            </button>
+
+        </div>
+      )}
+      {panel === "account" && (
+        <div id="navigation-account" className={navStyles.accountPanel}>
+          <div className={navStyles.accountIdentity}>
+            <Portrait avatar={user?.picture || "4"} name={username} />
+            <div>
+              <strong>{username}</strong>
+              <span>
+                {user?.guest
+                  ? t("Guest account", "บัญชีผู้เยี่ยมชม")
+                  : user
+                    ? user.email || t("Signed in", "เข้าสู่ระบบแล้ว")
+                    : t("Sign in to save your stories", "เข้าสู่ระบบเพื่อบันทึกเรื่องราว")}
+              </span>
+            </div>
           </div>
+          {user && !user.guest && (
+            <div className={navStyles.accountMeta}>
+              <span>{user.admin ? "Admin" : t("Member", "สมาชิก")}</span>
+              <span>{t("Synced account", "บัญชีที่ซิงก์แล้ว")}</span>
+            </div>
+          )}
+          {(!user || user.guest) ? (
+            <a className={navStyles.accountAction} href="/api/auth/google">
+              <UserRound size={18} />
+              {t("Continue with Google", "ดำเนินการต่อด้วย Google")}
+            </a>
+          ) : (
+            <>
+              <div className={navStyles.accountFriends}>
+                <FriendsPanel user={user} />
+              </div>
+              <button
+                className={navStyles.accountAction}
+                type="button"
+                onClick={async () => {
+                  await api("auth/logout", "POST", {});
+                  location.href = "/";
+                }}
+              >
+                <LogOut size={18} />
+                {t("Sign out", "ออกจากระบบ")}
+              </button>
+            </>
+          )}
         </div>
       )}
     </header>
