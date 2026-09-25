@@ -88,7 +88,7 @@ export async function runTurn(conv:Conversation,chars:Character[],world:World|nu
    );
    // A director may set the scene, but must never speak on behalf of a character.
    // Drop an invalid scene beat and its derived state before it can enter memory.
-   if(/[“”「」"']/.test(director.narration) || /(?:said|asked|replied|ตอบว่า|กล่าวว่า|ถามว่า)/iu.test(director.narration)){
+   if(/[“”「」"]/.test(director.narration) || /(?:said|asked|replied|ตอบว่า|กล่าวว่า|ถามว่า)/iu.test(director.narration)){
     director.narration='';
     director.event='';
     director.state_summary=state.summary||world.world_state;
