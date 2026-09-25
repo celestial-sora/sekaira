@@ -364,46 +364,54 @@ export function WorldDetail({
       </Link>
       <section className={`world-detail-hero glass world-${world.cover}${world.cover_image ? " has-image" : ""}`}>
         {world.cover_image && <img className="world-detail-image" src={world.cover_image} alt="" />}
-        <span className="eyebrow">
-          {owned
-            ? text("YOUR SCENARIO", "ซีนาริโอของคุณ")
-            : text("ORIGINAL SCENARIO", "ซีนาริโอต้นฉบับ")}{" "}
-          · {world.genre.toUpperCase()}
-        </span>
-        <h1>{world.name}</h1>
-        <p>{world.description}</p>
-        <div className="tags">
-          <span>
-            <Globe2 size={14} />
-            {text("Open-ended scenario", "เรื่องที่เล่นได้อย่างอิสระ")}
-          </span>
-          <span>
-            <UsersRound size={14} />
-            {chars.length} {text("characters", "ตัวละคร")}
-          </span>
-        </div>
-        {owned && (
-          <div className="inline-actions">
-            <Link className="button" href={`/worlds/${id}/settings`}><Pencil size={16}/>{text("Edit scenario", "แก้ไขซีนาริโอ")}</Link>
-            <button
-              className="button"
-              type="button"
-              disabled={busy}
-              aria-pressed={Boolean(world.published)}
-              onClick={togglePublication}
-            >
-              <Globe2 size={16} />
-              {world.published
-                ? text("Published · Unpublish", "เผยแพร่แล้ว · ยกเลิกการเผยแพร่")
-                : text("Publish to community", "เผยแพร่สู่คอมมูนิตี้")}
-            </button>
-            <span className="muted">
-              {world.published
-                ? text("Anyone can discover and play this scenario.", "ทุกคนค้นหาและเล่นซีนาริโอนี้ได้")
-                : text("Only you can access this scenario.", "ขณะนี้มีเพียงคุณที่เข้าถึงซีนาริโอนี้ได้")}
+        <div className="world-hero-content">
+          <div className="world-hero-kicker">
+            <span className="eyebrow">
+              {owned
+                ? text("YOUR SCENARIO", "ซีนาริโอของคุณ")
+                : text("ORIGINAL SCENARIO", "ซีนาริโอต้นฉบับ")}{" "}
+              · {world.genre.toUpperCase()}
             </span>
           </div>
-        )}
+          <div className="world-hero-copy">
+            <h1>{world.name}</h1>
+            <p>{world.description}</p>
+            <div className="tags">
+              <span>
+                <Globe2 size={14} />
+                {text("Open-ended scenario", "เรื่องที่เล่นได้อย่างอิสระ")}
+              </span>
+              <span>
+                <UsersRound size={14} />
+                {chars.length} {text("characters", "ตัวละคร")}
+              </span>
+            </div>
+          </div>
+          {owned && (
+            <div className="world-hero-ownerbar">
+              <div className="world-hero-actions">
+                <Link className="button" href={`/worlds/${id}/settings`}><Pencil size={16}/>{text("Edit scenario", "แก้ไขซีนาริโอ")}</Link>
+                <button
+                  className="button"
+                  type="button"
+                  disabled={busy}
+                  aria-pressed={Boolean(world.published)}
+                  onClick={togglePublication}
+                >
+                  <Globe2 size={16} />
+                  {world.published
+                    ? text("Published · Unpublish", "เผยแพร่แล้ว · ยกเลิกการเผยแพร่")
+                    : text("Publish to community", "เผยแพร่สู่คอมมูนิตี้")}
+                </button>
+              </div>
+              <span className="world-hero-status">
+                {world.published
+                  ? text("Anyone can discover and play this scenario.", "ทุกคนค้นหาและเล่นซีนาริโอนี้ได้")
+                  : text("Only you can access this scenario.", "ขณะนี้มีเพียงคุณที่เข้าถึงซีนาริโอนี้ได้")}
+              </span>
+            </div>
+          )}
+        </div>
       </section>
       <div className="world-detail-layout">
         <div>

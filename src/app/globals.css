@@ -181,3 +181,46 @@ html[data-theme='dark'] .hero p,html[data-theme='dark'] .hero-foot{color:var(--i
 .world-card.has-image>div p{opacity:1}
 .world-detail-hero.has-image :is(.eyebrow,h1,p,.tags,.inline-actions>.muted){text-shadow:0 2px 14px rgba(0,0,0,.8)}
 .world-detail-hero.has-image .tags span{background:rgba(12,10,16,.44);backdrop-filter:blur(5px)}
+
+
+/* Scenario detail hero composition: separate story copy from owner controls. */
+.world-detail-hero{padding:clamp(28px,3.6vw,52px);min-height:clamp(420px,48vw,620px)}
+.world-hero-content{position:relative;z-index:2;display:flex;min-height:100%;flex-direction:column;gap:22px}
+.world-hero-kicker{display:flex;align-items:center;min-height:30px}
+.world-hero-kicker .eyebrow{margin:0;padding:7px 10px;border-radius:999px;background:rgba(12,10,16,.42);backdrop-filter:blur(6px);letter-spacing:.16em}
+.world-hero-copy{display:grid;gap:18px;width:min(780px,72%);margin-top:auto;padding:clamp(20px,2.6vw,30px);border:1px solid rgba(255,255,255,.16);border-radius:24px;background:rgba(12,10,16,.42);backdrop-filter:blur(8px);box-shadow:0 16px 44px rgba(0,0,0,.14)}
+.world-detail-hero .world-hero-copy h1{margin:0;font-size:clamp(38px,4.3vw,64px);line-height:1.02;letter-spacing:-.035em;text-wrap:balance}
+.world-detail-hero .world-hero-copy p{max-width:62ch;margin:0;font-size:clamp(14px,1.25vw,18px);line-height:1.65;color:rgba(255,255,255,.94)}
+.world-hero-copy .tags{gap:8px;margin-top:2px}
+.world-hero-copy .tags span{padding:7px 10px;background:rgba(12,10,16,.42);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(5px)}
+.world-hero-ownerbar{display:flex;align-items:center;justify-content:space-between;gap:16px;width:min(920px,100%);padding:12px 14px;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(12,10,16,.48);backdrop-filter:blur(10px)}
+.world-hero-actions{display:flex;flex-wrap:wrap;gap:10px}
+.world-hero-actions .button{min-height:42px;border-color:rgba(255,255,255,.34);background:rgba(255,255,255,.92)}
+.world-hero-status{max-width:320px;font-size:12px;line-height:1.45;color:rgba(255,255,255,.78);text-align:right}
+.world-detail-hero.has-image .world-hero-content{position:relative;z-index:2}
+.world-detail-hero.has-image>p{max-width:none}
+.world-detail-hero.has-image :is(.world-hero-kicker,.world-hero-copy,.world-hero-ownerbar){text-shadow:none}
+
+@media(max-width:1100px){
+ .world-detail-hero{min-height:520px}
+ .world-hero-copy{width:min(760px,82%)}
+ .world-hero-ownerbar{align-items:flex-start;flex-direction:column}
+ .world-hero-status{max-width:100%;text-align:left}
+}
+@media(max-width:760px){
+ .world-detail-hero{padding:22px;min-height:500px}
+ .world-hero-content{gap:16px}
+ .world-hero-copy{width:100%;padding:20px;border-radius:20px}
+ .world-detail-hero .world-hero-copy h1{font-size:clamp(32px,9vw,46px)}
+ .world-detail-hero .world-hero-copy p{font-size:14px;line-height:1.55}
+ .world-hero-ownerbar{padding:12px;border-radius:16px}
+ .world-hero-actions{width:100%}
+ .world-hero-actions .button{flex:1;min-width:170px}
+}
+@media(max-width:520px){
+ .world-detail-hero{min-height:560px}
+ .world-hero-copy{padding:17px}
+ .world-hero-kicker .eyebrow{font-size:9px}
+ .world-hero-actions{display:grid;grid-template-columns:1fr}
+ .world-hero-actions .button{width:100%;min-width:0}
+}
