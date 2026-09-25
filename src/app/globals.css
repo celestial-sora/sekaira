@@ -272,3 +272,39 @@ html[data-theme='dark'] .hero p,html[data-theme='dark'] .hero-foot{color:var(--i
  .world-detail-aside{grid-template-columns:1fr}
  .world-detail-aside>.panel{padding:20px}
 }
+
+
+/* Stage 6: tighten scenario setup and make long lore comfortable to scan. */
+.world-setup-panel{padding:28px}
+.world-setup-panel>.section-title{margin:0 0 14px}
+.world-setup-panel .world-setup{gap:16px;padding:18px 0}
+.world-setup-panel .world-setup:last-of-type{border-bottom:0}
+.world-setup-panel .setup-number{flex:none;margin-top:2px}
+.world-setup-panel .setup-field>p{margin-bottom:12px;line-height:1.6}
+.world-setup-panel .scene-choices{gap:10px}
+.world-setup-panel .inline-actions{margin-top:14px}
+.world-start-footer{margin-top:12px;padding-top:18px;border-top:1px solid var(--line)}
+.world-start-footer>span{line-height:1.5}
+.world-start-footer .button{min-width:170px}
+
+.lore-panel{padding:28px}
+.lore-panel>.section-title{margin:0 0 18px}
+.lore-panel .advanced{margin:0 0 14px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--paper) 82%,transparent);overflow:hidden}
+.lore-panel .advanced:last-child{margin-bottom:0}
+.lore-panel .advanced summary{padding:17px 20px;margin:0;color:var(--purple);font-size:17px;line-height:1.35;font-weight:800}
+.lore-panel .advanced[open] summary{padding-bottom:13px}
+.lore-panel .advanced p{max-width:78ch;margin:0;padding:0 20px 20px;font-size:14px;line-height:1.78;color:var(--muted)}
+html[data-theme='dark'] .lore-panel .advanced{background:rgba(36,27,32,.7)}
+
+@media(max-width:900px){
+ .world-setup-panel,.lore-panel{padding:24px}
+ .world-start-footer{align-items:stretch;flex-direction:column}
+ .world-start-footer .button{width:100%;min-width:0}
+}
+@media(max-width:600px){
+ .world-setup-panel,.lore-panel{padding:18px}
+ .world-setup-panel .world-setup{padding:14px 0}
+ .lore-panel .advanced{border-radius:15px}
+ .lore-panel .advanced summary{padding:15px 16px;font-size:16px}
+ .lore-panel .advanced p{padding:0 16px 17px;font-size:13px;line-height:1.7}
+}
