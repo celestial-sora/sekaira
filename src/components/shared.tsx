@@ -152,17 +152,19 @@ export function WorldCard({ world: w }: { world: World }) {
     <div className={`world-card world-${w.cover}${w.cover_image ? " has-image" : ""}`}>
       {w.cover_image && <img className="world-card-image" src={w.cover_image} alt="" loading="lazy" decoding="async" />}
       <Link href={`/worlds/${w.id}`} className="card-hit-area" aria-label={text(`View ${w.name}`, `ดู ${w.name}`)} />
-      <span className="card-badge">
-        {w.owner_id
-          ? text("Your scenario", "ซีนาริโอของคุณ")
-          : text("Original scenario", "ซีนาริโอต้นฉบับ")}
-      </span>
-      {w.owner_id && (
-        <span className="community-badge">
-          {text("Community", "คอมมูนิตี้")}
+      <div className="world-card-badges">
+        <span className="card-badge">
+          {w.owner_id
+            ? text("Your scenario", "ซีนาริโอของคุณ")
+            : text("Original scenario", "ซีนาริโอต้นฉบับ")}
         </span>
-      )}
-      <div>
+        {w.owner_id && (
+          <span className="community-badge">
+            {text("Community", "คอมมูนิตี้")}
+          </span>
+        )}
+      </div>
+      <div className="world-card-body">
         <small>{displayTag(w.genre, language === "th")}</small>
         <h3>{w.name}</h3>
         {w.owner_id && w.creator_name && (
@@ -170,7 +172,7 @@ export function WorldCard({ world: w }: { world: World }) {
             {text("by", "โดย")} {w.creator_name}
           </Link>
         )}
-        <p>{w.description}</p>
+        <p className="world-card-description">{w.description}</p>
       </div>
       <span className="round-arrow">
         <ArrowRight size={17} />
