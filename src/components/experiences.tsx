@@ -415,7 +415,7 @@ export function WorldDetail({
       </section>
       <div className="world-detail-layout">
         <div className="world-detail-main">
-          <section className="glass panel">
+          <section className="glass panel world-setup-panel">
             <SectionTitle>
               {text("Your place in this scenario", "บทบาทของคุณในซีนาริโอนี้")}
             </SectionTitle>
@@ -514,7 +514,7 @@ export function WorldDetail({
               </div>
             </div>
             <ErrorNote message={error} />
-            <div className="form-footer">
+            <div className="form-footer world-start-footer">
               <span>
                 {text(
                   "No additional scene setup required.",
