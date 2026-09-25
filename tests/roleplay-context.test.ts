@@ -72,3 +72,20 @@ test('context compiler keeps persona, memory, relationship, summary and recent d
  assert.equal(context.recent_dialogue[0].content,'hey');
  assert.deepEqual(context.style_reference.user_samples,['hey']);
 });
+
+test('character receives scenario starting facts even when earlier dialogue is wrong',()=>{
+ const context=compileCharacterContext({
+  character,persona:null,
+  world:{
+   id:'world',owner_id:'owner',name:'School',description:'',created_at:'',
+   lore:'',rules:'Written pairs across year one and two.',locations:'',factions:'',
+   power_system:'',timeline:'',world_state:'Only second-year students risk expulsion.',genre:'School',cover:'night',
+  },
+  location:'Hall',scene:null,
+  state:{summary:'An earlier assistant claimed both years are expelled.'},
+  memories:[],relationship:null,recent:[],styleReference:[],otherReplies:[],
+  userMessage:'Who risks expulsion?',
+ });
+ assert.equal(context.world_context?.starting_state,'Only second-year students risk expulsion.');
+ assert.equal(context.world_context?.public_state_summary,'An earlier assistant claimed both years are expelled.');
+});

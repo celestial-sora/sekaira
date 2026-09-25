@@ -75,7 +75,7 @@ export function compileCharacterContext(args:ContextArgs){
    abilities:persona.abilities,appearance:persona.appearance,public_facts:persona.public_facts,
   }:null,
   world_context:world?{
-   name:world.name,description:world.description,rules:world.rules,locations:world.locations,
+   name:world.name,description:world.description,rules:world.rules,starting_state:world.world_state,locations:world.locations,
    factions:world.factions,power_system:world.power_system,timeline:world.timeline,
    location,observable_scene:scene,public_state_summary:state.summary||'',recent_public_events:(state.events||[]).slice(-10),
   }:null,

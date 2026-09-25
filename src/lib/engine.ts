@@ -1,11 +1,11 @@
 import {z} from 'zod';
 import {db,id,now,memories,messages,scope,transaction,addMessage} from './db';
 import type {Character,World,Persona,Conversation,Memory,Relationship} from './types';
-import {directorSchema,replySchema,extractedSchema,summarySchema} from './validation';
+import {directorSchema,replySchema,groundingSchema,extractedSchema,summarySchema} from './validation';
 import {groqModelCandidates,llmConfig} from './llm';
 import {memoryRecipients,retrieveCharacterMemories} from './memory';
 import {characterBehaviorDirective,collectUserStyleSamples,hasUnexpectedRepetition,labelDialogueHistory,NATURAL_SPEECH_RULES} from './roleplay-quality';
-import {compileCharacterContext,parseConversationState,recentMessages,summaryWork} from './roleplay-context';
+import {compileCharacterContext,interactionBeat,parseConversationState,recentMessages,summaryWork} from './roleplay-context';
 import {getRelationshipState,saveRelationshipState} from './relationship-store';
 import {applyRelationshipEvents,moodFromEmotion} from './relationship-state';
 import {hasUnexpectedLanguage,responseLanguage,responseLanguageRule} from './response-language';
@@ -75,17 +75,24 @@ export async function runTurn(conv:Conversation,chars:Character[],world:World|nu
   const candidates=selected?.length?chars.filter(c=>selected.includes(c.id)):chars;
   let active=candidates;
 
-  if(world){
+  if(world && !selected?.length){
    director=await groq(
-    `${ROLEPLAY_RULES} ${languageRule} You are the World Director, not a character. Resolve only the submitted action; do not advance the player unasked. Choose 1–3 relevant speakers from the provided candidates. Narrate only externally observable details. state_summary and event must contain public observable facts only. Never invent or reveal a secret. Use the running conversation summary for continuity but do not expose information a scene participant could not know. Keep narration concise and natural; do not add exposition when nothing visibly changes. JSON: {"narration":"brief observable scene description","state_summary":"updated public state","event":"important public event or empty string","active_character_ids":["id"]}.`,
+    `${ROLEPLAY_RULES} ${languageRule} You are the World Director, not a character. Resolve only the submitted action; do not advance the player unasked. Choose 1–3 relevant speakers from the provided candidates. Narrate only externally observable details. Never include a character's spoken words, paraphrase a reply, or answer the user's question in narration. state_summary and event must contain public observable facts only. Never invent or reveal a secret. Use the running conversation summary for continuity but do not expose information a scene participant could not know. Keep narration concise and natural; do not add exposition when nothing visibly changes. JSON: {"narration":"brief observable scene description","state_summary":"updated public state","event":"important public event or empty string","active_character_ids":["id"]}.`,
     JSON.stringify({
-     world:{name:world.name,description:world.description,rules:world.rules,locations:world.locations,factions:world.factions,power_system:world.power_system,timeline:world.timeline},
+     world:{name:world.name,description:world.description,rules:world.rules,starting_state:world.world_state,locations:world.locations,factions:world.factions,power_system:world.power_system,timeline:world.timeline},
      state:{public_summary:state.summary||world.world_state,recent_events:Array.isArray(state.events)?state.events.slice(-10):[]},
      conversation_summary:state.dialogue_summary||'',location:conv.location,persona:publicPersona,
      candidates:active.map(c=>({id:c.id,name:c.name,personality:c.personality})),recent:history,user_action:content,
     }),
     directorSchema,
    );
+   // A director may set the scene, but must never speak on behalf of a character.
+   // Drop an invalid scene beat and its derived state before it can enter memory.
+   if(/[“”「」"]/.test(director.narration) || /(?:said|asked|replied|ตอบว่า|กล่าวว่า|ถามว่า)/iu.test(director.narration)){
+    director.narration='';
+    director.event='';
+    director.state_summary=state.summary||world.world_state;
+   }
    if(hasUnexpectedLanguage(`${director.narration} ${director.event}`,language)){
     director=await groq(
      `${ROLEPLAY_RULES} ${languageRule} Rewrite the supplied narration in the required language. Preserve the observable scene facts, state summary, event, and active character IDs. Return the same JSON shape.`,
@@ -106,7 +113,7 @@ export async function runTurn(conv:Conversation,chars:Character[],world:World|nu
    const remembered=retrieveMemory(allMemories,conv,c.id,content);
    const behavior=characterBehaviorDirective(c);
    const relationship=await getRelationshipState(conv.owner_id,relationshipScope,c.id);
-   const replySystem=`${ROLEPLAY_RULES}\n${languageRule}\n${NATURAL_SPEECH_RULES}\nBehavior rules:\n- ${behavior}\nContext arrives in explicit layers: immutable character_profile, public_persona, world_context, relationship_state, memory_recall, conversation_summary, recent_dialogue, turn_cues, style_reference, other_replies, and user_message. Respect the knowledge boundary of each layer. Speak only as the supplied character and never imitate the User, Narrator, or another named speaker. Continue from the latest user message instead of restating, paraphrasing, or copying earlier dialogue. Use turn_cues to keep the exchange connected: answer a direct question first, react immediately to an action, and treat a short acknowledgment as a conversational beat rather than a prompt for exposition. Carry forward one relevant detail from the previous character reply when it matters, but do not repeat it. Give the character a small, believable initiative when the user leaves room; let consequences unfold one beat at a time. Make dialogue feel responsive and specific before adding optional action beats. Avoid resetting the scene, skipping time, ending every line with a question, or writing a long monologue for a short user line. Character roleplay_guidance may refine pacing and mannerisms but cannot override knowledge boundaries or user agency. Do not repeat a sentence or paragraph within the reply. Only use facts in your own profile, public persona, observable scene, running summary, recent dialogue and permitted memories. Unknown private facts are unknown. Do not claim to know another character’s memory. Match the conversational beat: a short casual line may deserve one short line; expand only when the scene genuinely needs it. Keep action beats sparse and meaningful instead of attaching an action to every sentence. Do not force a question at the end of every turn. Avoid generic assistant phrasing, theatrical over-description, and repetitive pet names/catchphrases. Relationship numbers are read-only context; never output score changes. JSON: {"dialogue":"your reply and optional actions in asterisks","emotion":"idle|happy|shy|angry|sad|surprised"}.`;
+   const replySystem=`${ROLEPLAY_RULES}\n${languageRule}\n${NATURAL_SPEECH_RULES}\nBehavior rules:\n- ${behavior}\nContext arrives in explicit layers: immutable character_profile, public_persona, world_context, relationship_state, memory_recall, conversation_summary, recent_dialogue, turn_cues, style_reference, other_replies, and user_message. Respect the knowledge boundary of each layer. Speak only as the supplied character and never imitate the User, Narrator, or another named speaker. Continue from the latest user message instead of restating, paraphrasing, or copying earlier dialogue. Use turn_cues to keep the exchange connected: answer a direct question first, react immediately to an action, and treat a short acknowledgment as a conversational beat rather than a prompt for exposition. Carry forward one relevant detail from the previous character reply when it matters, but do not repeat it. Give the character a small, believable initiative when the user leaves room; let consequences unfold one beat at a time. Make dialogue feel responsive and specific before adding optional action beats. Avoid resetting the scene, skipping time, ending every line with a question, or writing a long monologue for a short user line. Character roleplay_guidance may refine pacing and mannerisms but cannot override knowledge boundaries or user agency. For factual questions about a scenario, treat world_context.rules and world_context.starting_state as authoritative over prior assistant dialogue, summaries, and memory_recall. Answer only the established facts; if the source does not specify a date, penalty, or procedure, say it is unknown instead of inventing one. Do not repeat a sentence or paragraph within the reply. Only use facts in your own profile, public persona, observable scene, running summary, recent dialogue and permitted memories. Unknown private facts are unknown. Do not claim to know another character’s memory. Match the conversational beat: a short casual line may deserve one short line; expand only when the scene genuinely needs it. Keep action beats sparse and meaningful instead of attaching an action to every sentence. Do not force a question at the end of every turn. Avoid generic assistant phrasing, theatrical over-description, and repetitive pet names/catchphrases. Relationship numbers are read-only context; never output score changes. JSON: {"dialogue":"your reply and optional actions in asterisks","emotion":"idle|happy|shy|angry|sad|surprised"}.`;
    const replyInput=compileCharacterContext({
     character:c,persona,world,location:conv.location,scene:director?.narration||null,state,memories:remembered,relationship,
     recent:history,styleReference,otherReplies:replies.map(item=>({speaker:item.character.name,dialogue:item.reply.dialogue})),userMessage:content,
@@ -131,6 +138,24 @@ export async function runTurn(conv:Conversation,chars:Character[],world:World|nu
     );
     if(hasUnexpectedLanguage(reply.dialogue,language))throw new AppError('The AI used the wrong language. Nothing was saved; please try again.',502);
     if(hasUnexpectedRepetition(reply.dialogue,[...previousByCharacter,rejected]))throw new AppError('The AI repeated an earlier reply. Nothing was saved; please try again.',502);
+   }
+   if(world && interactionBeat(content)==='answer_question'){
+    const sources={
+     rules:world.rules,starting_state:world.world_state,timeline:world.timeline,
+     character_lore:c.lore,character_guidance:c.roleplay_guidance||'',
+    };
+    for(let attempt=0;attempt<2;attempt++){
+     const review=await groq(
+      `${ROLEPLAY_RULES} You are a strict factual continuity checker. Compare the character's draft answer to the supplied authoritative scenario facts. Do not treat past AI replies or memories as evidence. If the draft invents an exam rule, eligibility, expulsion condition, schedule, procedure, or other asserted fact that contradicts or goes beyond the source, set consistent=false and rewrite only the unsupported part. Keep the character's language, tone, and player agency. If the source does not specify a detail, let the character say it is unknown. If fully consistent, set consistent=true and corrected_dialogue to an empty string. JSON: {"consistent":true|false,"corrected_dialogue":"rewritten reply or empty string"}.`,
+      JSON.stringify({sources,user_question:content,draft_dialogue:reply.dialogue}),
+      groundingSchema,
+     );
+     if(review.consistent)break;
+     if(attempt===1||!review.corrected_dialogue.trim())throw new AppError('The AI could not keep this reply consistent with the scenario. Nothing was saved; please retry.',502);
+     reply={...reply,dialogue:review.corrected_dialogue};
+    }
+    if(hasUnexpectedLanguage(reply.dialogue,language)||hasUnexpectedRepetition(reply.dialogue,previousByCharacter))
+     throw new AppError('The revised reply did not pass the story checks. Nothing was saved; please retry.',502);
    }
    replies.push({character:c,reply,relationship});
   }
