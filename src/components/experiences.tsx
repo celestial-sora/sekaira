@@ -383,6 +383,7 @@ export function WorldDetail({
         </div>
         {owned && (
           <div className="inline-actions">
+            <Link className="button" href={`/worlds/${id}/settings`}><Pencil size={16}/>{text("Edit scenario", "แก้ไขซีนาริโอ")}</Link>
             <button
               className="button"
               type="button"

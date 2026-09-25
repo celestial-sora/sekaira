@@ -226,6 +226,9 @@ export default function App() {
         onUpdate={refresh}
       />
     );
+  } else if (segments[0] === "worlds" && segments[1] && segments[2] === "settings") {
+    const world=data.worlds.find(item=>item.id===segments[1]&&item.owner_id===data.user?.id);
+    content=world?<WorldForm refresh={refresh} scenario={world}/>:<Empty title={t('Scenario settings unavailable','ไม่สามารถเปิดการตั้งค่าซีนาริโอได้')} href="/worlds" label={t('All scenarios','ซีนาริโอทั้งหมด')}>{t('Only the owner can edit this scenario.','มีเพียงเจ้าของที่แก้ซีนาริโอนี้ได้')}</Empty>;
   } else if (segments[0] === "worlds" && segments[1])
     content = (
       <WorldDetail

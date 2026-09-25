@@ -37,6 +37,7 @@ import {
 import {
   characterCreationSchema,
   worldSchema,
+  worldUpdateSchema,
   personaSchema,
   conversationSchema,
   turnSchema,
@@ -318,6 +319,19 @@ async function handle(req: NextRequest, ctx: Context) {
       await transaction(async () => await createCharacter(owner, input, friend_ids)),
       201,
     );
+  }
+  if (path[0] === "worlds" && path.length === 2 && method === "PATCH") {
+    const world = await get<World>("worlds", path[1], owner);
+    if (!world || world.owner_id !== owner)
+      fail("Only the owner can change this world.", 403);
+    const changes = worldUpdateSchema.parse(await body(req));
+    const updated = { ...world, ...changes };
+    await transaction(async () => {
+      await db().prepare("UPDATE worlds SET data=? WHERE id=? AND owner_id=?").run(JSON.stringify(updated), world.id, owner);
+      if (changes.name && changes.name !== world.name)
+        await db().prepare("UPDATE conversations SET name=? WHERE world_id=? AND name=?").run(changes.name, world.id, world.name);
+    });
+    return json(updated);
   }
   if (path[0] === "worlds" && method === "POST") {
     if (path.length === 1)
