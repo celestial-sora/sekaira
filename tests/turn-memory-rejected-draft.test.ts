@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {rmSync} from 'node:fs';
 import {db} from '../src/lib/database';
-import {memories,retrieveMemory,runTurn} from '../src/lib/engine';
-import {startConversation} from '../src/lib/db';
+import {retrieveMemory,runTurn} from '../src/lib/engine';
+import {memories,startConversation} from '../src/lib/db';
 import type {Character,Persona,World} from '../src/lib/types';
 
 const path=`/tmp/sekaira-memory-rejected-${process.pid}.sqlite`;
