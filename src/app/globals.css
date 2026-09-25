@@ -251,3 +251,24 @@ html[data-theme='dark'] .hero p,html[data-theme='dark'] .hero-foot{color:var(--i
  .world-card h3{font-size:clamp(25px,8vw,36px)}
  .world-card-description{-webkit-line-clamp:3;font-size:12px!important}
 }
+
+
+/* Stage 5: keep scenario detail columns compact instead of stretching empty sidebar space. */
+.world-detail-layout{grid-template-columns:minmax(0,1.5fr) minmax(280px,.5fr);gap:24px;align-items:start}
+.world-detail-main{min-width:0;display:grid;gap:20px}
+.world-detail-aside{min-width:0;display:grid;gap:16px;align-self:start;position:static}
+.world-detail-aside>.panel{height:auto;min-height:0;padding:22px}
+.world-detail-aside .section-title{margin-top:0;margin-bottom:18px}
+.world-detail-aside .section-title h2{font-size:20px}
+.world-detail-aside h3{margin-top:18px;line-height:1.35}
+.world-detail-aside p{margin-bottom:0;line-height:1.65}
+
+@media(max-width:1180px){
+ .world-detail-layout{grid-template-columns:1fr;gap:20px}
+ .world-detail-aside{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;position:static!important;top:auto!important}
+ .world-detail-aside>.panel{height:auto;align-self:start}
+}
+@media(max-width:720px){
+ .world-detail-aside{grid-template-columns:1fr}
+ .world-detail-aside>.panel{padding:20px}
+}

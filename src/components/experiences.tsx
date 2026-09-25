@@ -414,7 +414,7 @@ export function WorldDetail({
         </div>
       </section>
       <div className="world-detail-layout">
-        <div>
+        <div className="world-detail-main">
           <section className="glass panel">
             <SectionTitle>
               {text("Your place in this scenario", "บทบาทของคุณในซีนาริโอนี้")}
@@ -565,7 +565,7 @@ export function WorldDetail({
               ))}
           </section>
         </div>
-        <aside>
+        <aside className="world-detail-aside">
           <section className="glass panel">
             <SectionTitle>
               {text("Places & people", "สถานที่และผู้คน")}
