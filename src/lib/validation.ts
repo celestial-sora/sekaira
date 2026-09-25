@@ -24,7 +24,8 @@ export const characterUpdateSchema=z.object({
  visibility:z.enum(['private','public','friends','selected']).optional(),
  friend_ids:z.array(z.string().min(1).max(100)).max(100).optional(),
 }).strict().refine(value=>Object.keys(value).length>0,'Choose a field to update.');
-export const worldSchema=z.object({name,description:text,lore:text,rules:text,locations:text,factions:text,power_system:text,timeline:text,world_state:text,genre:z.enum(['Fantasy','Isekai','School','Romance','Mystery','Historical','Action','Sci-fi','Original']).default('Original'),cover:z.enum(['sky','forest','night','city','sunset']).default('sky')});
+const scenarioImage=z.union([z.null(),z.string().max(2_800_000).refine(v=>/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(v),'Upload a PNG, JPEG or WebP image.')]);
+export const worldSchema=z.object({name,description:text,lore:text,rules:text,locations:text,factions:text,power_system:text,timeline:text,world_state:text,genre:z.enum(['Fantasy','Isekai','School','Romance','Mystery','Historical','Action','Sci-fi','Original']).default('Original'),cover:z.enum(['sky','forest','night','city','sunset']).default('sky'),cover_image:scenarioImage.default(null)});
 export const worldUpdateSchema=z.object({
  name:z.string().trim().min(1,'Please enter a name.').max(100).optional(),
  description:z.string().max(6000).optional(),
@@ -37,6 +38,7 @@ export const worldUpdateSchema=z.object({
  world_state:z.string().max(6000).optional(),
  genre:z.enum(['Fantasy','Isekai','School','Romance','Mystery','Historical','Action','Sci-fi','Original']).optional(),
  cover:z.enum(['sky','forest','night','city','sunset']).optional(),
+ cover_image:scenarioImage.optional(),
 }).strict().refine(value=>Object.keys(value).length>0,'Choose a field to update.');
 export const personaSchema=z.object({name,description:text,world_id:optionalId,species:text,role:text,rank:text,faction:text,abilities:text,appearance:text,backstory:text,personality:text,public_facts:text,secret_facts:text});
 export const conversationSchema=z.object({world_id:optionalId,persona_id:optionalId,scenario_id:optionalId,character_ids:z.array(z.string().min(1).max(100)).min(1).max(5).refine(v=>new Set(v).size===v.length,'Each character can only join once.')}).superRefine((v,ctx)=>{if(!v.world_id&&(v.persona_id||v.scenario_id||v.character_ids.length!==1))ctx.addIssue({code:'custom',message:'Standalone chat has one character and no required persona or scenario.'});if(v.world_id&&!v.persona_id)ctx.addIssue({code:'custom',message:'Choose a persona for this world.'});});

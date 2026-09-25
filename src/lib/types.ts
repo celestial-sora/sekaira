@@ -1,7 +1,7 @@
 export type Entity = { id: string; owner_id: string | null; name: string; description: string; created_at: string; published?: boolean; creator_name?: string | null; creator_picture?: string | null };
 export type CharacterVisibility = 'private' | 'public' | 'friends' | 'selected';
 export type Character = Entity & { visibility?: CharacterVisibility; avatar: string; personality: string; backstory: string; speaking_style: string; likes: string; dislikes: string; relationship_behavior: string; roleplay_guidance?: string; greeting: string; example_dialogue: string; lore: string; world_id: string | null; scenario_id: string | null; faction: string; tags: string[] };
-export type World = Entity & { lore: string; rules: string; locations: string; factions: string; power_system: string; timeline: string; world_state: string; genre: string; cover: string };
+export type World = Entity & { lore: string; rules: string; locations: string; factions: string; power_system: string; timeline: string; world_state: string; genre: string; cover: string; cover_image?: string | null };
 export type Persona = Entity & { world_id: string | null; species: string; role: string; rank: string; faction: string; abilities: string; appearance: string; backstory: string; personality: string; public_facts: string; secret_facts: string };
 export type Conversation = { id: string; owner_id: string; name: string; world_id: string | null; persona_id: string | null; scenario_id: string | null; state: string; created_at: string; updated_at: string; character_ids: string[]; location: string };
 export type Message = { id: string; conversation_id: string; role: 'user' | 'assistant' | 'director'; character_id: string | null; content: string; emotion: string; created_at: string };
